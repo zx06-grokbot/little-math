@@ -4,7 +4,7 @@
 	import { zh } from '$lib/i18n/zh';
 	import { getThemeById } from '$lib/config/themes';
 	import { isChain, isCompare, isMakeTarget, isRemainder, exprText, REMAINDER_SEP } from '$lib/format';
-	import { fitText } from '$lib/actions/fitText';
+	import { fitSheetText } from '$lib/actions/fitText';
 
 	interface Props {
 		problems: AnyProblem[];
@@ -161,6 +161,7 @@
 				class:cols-2={!vertical && columns === 2}
 				class:cols-3={!vertical && columns === 3}
 				style="--cols: {columns}; --rows: {rows}; --digits: {hDigits};"
+				use:fitSheetText={`${columns}|${showAnswers}|${vertical}|${page.map((p) => tokens(p).map((t) => t.v).join('')).join('¦')}`}
 			>
 				{#each page as problem, idx}
 					{@const n = pageIndex * perPage + idx + 1}
@@ -196,7 +197,7 @@
 						{@const toks = tokens(problem)}
 						{@const aligned = !isChain(problem) && !isCompare(problem) && !isRemainder(problem)}
 						<div class="cell h-cell" data-testid="problem">
-							<span class="line" class:aligned class:long={isChain(problem) || isRemainder(problem)} use:fitText={toks.map((x) => x.v).join('|') + columns}>
+							<span class="line" class:aligned class:long={isChain(problem) || isRemainder(problem)}>
 								<span class="problem-number">{n}.</span>{#each toks as tk}<span class="tk tk-{tk.k}">{tk.v}</span>{/each}
 							</span>
 						</div>
@@ -325,19 +326,20 @@
 	.line {
 		display: inline-block;
 		white-space: nowrap;
-		font-size: 21px;
+		/* --fit-line-size 由 fitSheetText 在整页需要缩小时统一注入 */
+		font-size: var(--fit-line-size, 21px);
 		line-height: 1.3;
 		color: #4a4a4a;
 		font-variant-numeric: tabular-nums;
 	}
 	.cols-2 .line {
-		font-size: 26px;
+		font-size: var(--fit-line-size, 26px);
 	}
 	.cols-3 .line.long {
-		font-size: 18px;
+		font-size: var(--fit-line-size, 18px);
 	}
 	.cols-2 .line.long {
-		font-size: 23px;
+		font-size: var(--fit-line-size, 23px);
 	}
 
 	.problem-number {
