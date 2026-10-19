@@ -112,12 +112,18 @@
 		return showAnswers ? { text: String(v), cls: 'v-ans' } : { text: '', cls: 'v-box' };
 	}
 
-	const hDigits = $derived(
-		Math.max(
-			2,
-			...problems.map((p) => (isMakeTarget(p) ? String(p.target).length : 'a' in p && !('type' in p) ? Math.max(String((p as Problem).a).length, String((p as Problem).result).length) : 2))
-		)
-	);
+	/** 横式数字槽宽度：取本页所有模式里最宽的数字/算式片段 */
+	function maxDigits(p: AnyProblem): number {
+		if (isMakeTarget(p)) return Math.max(String(p.a).length, String(p.answer).length, String(p.target).length);
+		if (isChain(p)) return Math.max(...p.numbers.map((n) => String(n).length), String(p.result).length);
+		if (isRemainder(p))
+			return Math.max(String(p.dividend).length, String(p.divisor).length, String(p.quotient).length, String(p.remainder).length);
+		if (isCompare(p)) return Math.max(exprText(p.left).replace(/\s/g, '').length, exprText(p.right).replace(/\s/g, '').length);
+		const q = p as Problem;
+		return Math.max(String(q.a).length, String(q.b).length, String(q.result).length);
+	}
+
+	const hDigits = $derived(Math.max(2, ...problems.map(maxDigits)));
 </script>
 
 <div
@@ -195,10 +201,11 @@
 						</div>
 					{:else}
 						{@const toks = tokens(problem)}
-						{@const aligned = !isChain(problem) && !isCompare(problem) && !isRemainder(problem)}
+						{@const cmpAligned = isCompare(problem)}
+						{@const aligned = !cmpAligned}
 						<div class="cell h-cell" data-testid="problem">
-							<span class="line" class:aligned class:long={isChain(problem) || isRemainder(problem)}>
-								<span class="problem-number">{n}.</span>{#each toks as tk}<span class="tk tk-{tk.k}">{tk.v}</span>{/each}
+							<span class="line" class:aligned class:cmp-aligned={cmpAligned} class:long={isChain(problem) || isRemainder(problem)} data-testid="problem-line">
+								<span class="problem-number">{n}.</span>{#each toks as tk}<span class="tk tk-{tk.k}" data-tk={tk.k}>{tk.v}</span>{/each}
 							</span>
 						</div>
 					{/if}
@@ -345,16 +352,20 @@
 	.problem-number {
 		display: inline-block;
 		color: #ff6b6b;
-		min-width: 2.2em;
+		width: 2.75em;
+		min-width: 2.75em;
 		text-align: right;
 		margin-right: 0.35em;
 		font-weight: 700;
 		font-size: 0.85em;
+		box-sizing: border-box;
 	}
 
 	.tk {
 		display: inline-block;
 		text-align: center;
+		box-sizing: border-box;
+		vertical-align: baseline;
 	}
 	.tk-num {
 		color: #5c7cfa;
@@ -387,24 +398,68 @@
 	.tk-ans:not(:first-child):not(:last-child) {
 		margin: 0 0.25em;
 	}
-	/* 普通计算：数字列对齐 */
+
+	/*
+	 * 横式对齐：定宽数字槽（monospace + 右齐）+ 定宽运算符，
+	 * 使同列题目的 = / 括号竖向整齐。保留 --fit-line-size 整页统一字号。
+	 */
 	.aligned .tk-num,
 	.aligned .tk-blank,
 	.aligned .tk-ans {
-		min-width: calc(var(--digits) * 0.62em + 0.5em);
-	}
-	.aligned .tk-num {
+		width: calc(var(--digits) * 1ch + 0.9em);
+		min-width: calc(var(--digits) * 1ch + 0.9em);
+		margin: 0;
 		text-align: right;
+		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
+		font-variant-numeric: tabular-nums;
+		font-weight: 600;
+	}
+	.aligned .tk-ans:not(:first-child):not(:last-child) {
+		margin: 0;
+	}
+	.aligned .tk-op {
+		width: 1.35em;
+		min-width: 1.35em;
+		margin: 0;
+		text-align: center;
+	}
+	.aligned .tk-sep {
+		width: 2.4em;
+		min-width: 2.4em;
+		margin: 0;
+		text-align: center;
+		letter-spacing: 0;
 	}
 
-	/* 竖式 */
+	/* 比较大小：左右算式等宽槽，○ / 答案居中对齐 */
+	.cmp-aligned .tk-num {
+		width: calc(var(--digits) * 0.62em + 0.5em);
+		min-width: calc(var(--digits) * 0.62em + 0.5em);
+		font-variant-numeric: tabular-nums;
+	}
+	.cmp-aligned .tk-num:first-of-type {
+		text-align: right;
+	}
+	.cmp-aligned .tk-num:last-of-type {
+		text-align: left;
+	}
+	.cmp-aligned .tk-cmp,
+	.cmp-aligned .tk-ans {
+		width: 1.6em;
+		min-width: 1.6em;
+		margin: 0 0.35em;
+		text-align: center;
+	}
+
+	/* 竖式：固定字符宽右齐，个位列对齐；去掉 letter-spacing 以免破坏等宽 */
 	.v-cell {
 		display: flex;
 		align-items: flex-start;
 		gap: 2mm;
 		padding-top: 3mm;
-		font-family: 'Courier New', 'DejaVu Sans Mono', monospace;
+		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
 		font-size: 24px;
+		font-variant-numeric: tabular-nums;
 	}
 	.v-cell .problem-number {
 		font-family: 'Comic Sans MS', 'PingFang SC', cursive, sans-serif;
@@ -427,14 +482,19 @@
 		height: 1.45em;
 	}
 	.v-op {
+		width: 1.2ch;
+		min-width: 1.2ch;
+		text-align: center;
 		margin-right: auto;
 		color: #ff922b;
 	}
 	.v-num {
 		display: inline-block;
+		width: calc(var(--len) * 1ch);
 		min-width: calc(var(--len) * 1ch);
 		text-align: right;
-		letter-spacing: 0.05em;
+		letter-spacing: 0;
+		box-sizing: border-box;
 	}
 	.v-line {
 		height: 2px;
@@ -442,6 +502,8 @@
 		margin: 0.15em 0 0.25em;
 	}
 	.v-box {
+		width: calc(var(--len) * 1ch);
+		min-width: calc(var(--len) * 1ch);
 		height: 1.2em;
 		border: 1.5px dashed #b0b0b0;
 		border-radius: 4px;
@@ -457,9 +519,11 @@
 		flex-direction: column;
 		font-weight: 600;
 		color: #4a4a4a;
+		font-variant-numeric: tabular-nums;
 	}
 	.ld-q {
 		align-self: flex-end;
+		width: calc(var(--len) * 1ch + 0.6em);
 		min-width: calc(var(--len) * 1ch + 0.6em);
 		text-align: right;
 		height: 1.45em;
@@ -467,11 +531,14 @@
 		justify-content: flex-end;
 		align-items: center;
 		padding-right: 0.3em;
+		box-sizing: border-box;
 	}
 	.ld-q > span {
 		display: inline-block;
+		width: calc(var(--len) * 1ch);
 		min-width: calc(var(--len) * 1ch);
 		text-align: right;
+		box-sizing: border-box;
 	}
 	.ld-body {
 		display: flex;
@@ -483,8 +550,10 @@
 	.ld-divisor > span,
 	.ld-dividend > span {
 		display: inline-block;
+		width: calc(var(--len) * 1ch);
 		min-width: calc(var(--len) * 1ch);
 		text-align: right;
+		box-sizing: border-box;
 	}
 	.ld-dividend {
 		border-top: 2px solid #333;
