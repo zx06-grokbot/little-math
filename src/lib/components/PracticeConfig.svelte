@@ -3,13 +3,16 @@
 	import { OP_NAMES } from '$lib/types';
 	import { GRADE_PRESETS } from '$lib/config/presets';
 	import { zh } from '$lib/i18n/zh';
+	import { usesOperations, usesRange, type ValidationIssue } from '$lib/generators/validate';
 
 	interface Props {
 		config: ExerciseConfig;
+		issues?: ValidationIssue[];
+		error?: string | null;
 		onStart: () => void;
 	}
 
-	let { config = $bindable(), onStart }: Props = $props();
+	let { config = $bindable(), issues = [], error = null, onStart }: Props = $props();
 
 	function handlePresetChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
@@ -20,14 +23,11 @@
 		}
 	}
 
-	function toggleOperation(op: Operation) {
-		if (config.operations.includes(op)) {
-			if (config.operations.length > 1) {
-				config.operations = config.operations.filter((o) => o !== op);
-			}
-		} else {
-			config.operations = [...config.operations, op];
-		}
+	function toggleOperation(op: Operation, checked: boolean) {
+		const set = new Set(config.operations);
+		if (checked) set.add(op);
+		else set.delete(op);
+		config.operations = (['add', 'sub', 'mul', 'div'] as Operation[]).filter((o) => set.has(o));
 	}
 </script>
 
@@ -48,7 +48,7 @@
 	<div class="config-row">
 		<label
 			>模式
-			<select bind:value={config.problemMode}>
+			<select bind:value={config.problemMode} data-testid="practice-mode">
 				<option value="normal">{zh.config.normalMode}</option>
 				<option value="makeTarget">{zh.config.makeTargetMode}</option>
 				<option value="chain">{zh.config.chainMode}</option>
@@ -84,7 +84,19 @@
 		</div>
 	{/if}
 
-	{#if config.problemMode !== 'makeTarget' && config.problemMode !== 'remainder'}
+	{#if config.problemMode === 'chain'}
+		<div class="config-row">
+			<label
+				>{zh.config.chainLength}
+				<select bind:value={config.chainLength}>
+					<option value={3}>{zh.config.chainLength3}</option>
+					<option value={4}>{zh.config.chainLength4}</option>
+				</select>
+			</label>
+		</div>
+	{/if}
+
+	{#if usesOperations(config.problemMode)}
 		<div class="config-row">
 			<span>运算</span>
 			<div class="checkbox-group">
@@ -93,7 +105,7 @@
 						<input
 							type="checkbox"
 							checked={config.operations.includes(op as Operation)}
-							onchange={() => toggleOperation(op as Operation)}
+							onchange={(e) => toggleOperation(op as Operation, (e.target as HTMLInputElement).checked)}
 						/>
 						{name}
 					</label>
@@ -102,14 +114,28 @@
 		</div>
 	{/if}
 
+	{#if usesRange(config.problemMode)}
+		<div class="config-row">
+			<span>{config.problemMode === 'remainder' ? '被除数范围' : '数字范围'}</span>
+			<div class="range-row">
+				<input type="number" bind:value={config.range.min} min="0" max="9999" aria-label="最小值" />
+				<span>～</span>
+				<input type="number" bind:value={config.range.max} min="1" max="9999" aria-label="最大值" />
+			</div>
+		</div>
+	{/if}
+
 	<div class="config-row">
 		<label
 			>题数
-			<input type="number" bind:value={config.totalCount} min="5" max="50" />
+			<input type="number" bind:value={config.totalCount} min="1" max="50" />
 		</label>
 	</div>
 
-	<button class="start-btn" onclick={onStart}>开始答题 🚀</button>
+	{#each issues as issue}<p class="error" role="alert">{issue.message}</p>{/each}
+	{#if error && issues.length === 0}<p class="error" role="alert">{error}</p>{/if}
+
+	<button class="start-btn" onclick={onStart} disabled={issues.length > 0} data-testid="practice-start">开始答题 🚀</button>
 </div>
 
 <style>
@@ -154,6 +180,24 @@
 		align-items: center;
 		gap: 0.25rem;
 		cursor: pointer;
+	}
+	.range-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+	}
+	.range-row input {
+		width: 6rem;
+	}
+	.error {
+		color: #e03131;
+		font-size: 0.9rem;
+		margin: 0.4rem 0;
+	}
+	.start-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 	.start-btn {
 		width: 100%;

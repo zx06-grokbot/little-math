@@ -1,95 +1,19 @@
 <script lang="ts">
-	import type { Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem } from '$lib/types';
-	import { OP_SYMBOLS } from '$lib/types';
+	import type { AnyProblem } from '$lib/types';
+	import { correctAnswerOf, formatProblemText } from '$lib/format';
 
 	interface Props {
-		problem: Problem | MakeTargetProblem | ChainProblem | CompareProblem | RemainderProblem;
+		problem: AnyProblem;
 	}
 
 	let { problem }: Props = $props();
 
 	function formatProblem(): string {
-		if ('type' in problem) {
-			if (problem.type === 'makeTarget') {
-				const p = problem as MakeTargetProblem;
-				const blank = '___';
-				return p.blankFirst ? `${blank} + ${p.a} = ${p.target}` : `${p.a} + ${blank} = ${p.target}`;
-			}
-			if (problem.type === 'chain') {
-				const p = problem as ChainProblem;
-				let str = '';
-				for (let i = 0; i < p.numbers.length; i++) {
-					if (p.blank === i) {
-						str += '___';
-					} else {
-						str += p.numbers[i];
-					}
-					if (i < p.ops.length) {
-						str += ` ${OP_SYMBOLS[p.ops[i]]} `;
-					}
-				}
-				str += ' = ';
-				str += p.blank === 'result' ? '___' : p.result;
-				return str;
-			}
-			if (problem.type === 'compare') {
-				const p = problem as CompareProblem;
-				const left = `${p.left.a} ${OP_SYMBOLS[p.left.op]} ${p.left.b}`;
-				const right = `${p.right.a} ${OP_SYMBOLS[p.right.op]} ${p.right.b}`;
-				return `${left} ○ ${right}`;
-			}
-			if (problem.type === 'remainder') {
-				const p = problem as RemainderProblem;
-				const blank = '___';
-				let quotient: string;
-				let remainder: string;
-
-				if (p.blank === 'quotient') {
-					quotient = blank;
-					remainder = String(p.remainder);
-				} else if (p.blank === 'remainder') {
-					quotient = String(p.quotient);
-					remainder = blank;
-				} else {
-					quotient = blank;
-					remainder = blank;
-				}
-
-				return `${p.dividend} ÷ ${p.divisor} = ${quotient} ... ${remainder}`;
-			}
-		}
-		// 普通题目
-		const p = problem as Problem;
-		const blank = '___';
-		const first = p.blank === 'first' ? blank : p.a;
-		const second = p.blank === 'second' ? blank : p.b;
-		const result = p.blank === 'result' ? blank : p.result;
-		return `${first} ${OP_SYMBOLS[p.op]} ${second} = ${result}`;
+		return formatProblemText(problem, false, '___');
 	}
 
-	function getCorrectAnswer(): number {
-		if ('type' in problem) {
-			if (problem.type === 'makeTarget') {
-				return (problem as MakeTargetProblem).answer;
-			}
-			if (problem.type === 'chain') {
-				const p = problem as ChainProblem;
-				return p.blank === 'result' ? p.result : p.numbers[p.blank as number];
-			}
-			if (problem.type === 'remainder') {
-				const p = problem as RemainderProblem;
-				return p.blank === 'quotient' ? p.quotient : p.remainder;
-			}
-		}
-		const p = problem as Problem;
-		switch (p.blank) {
-			case 'first':
-				return p.a;
-			case 'second':
-				return p.b;
-			case 'result':
-				return p.result;
-		}
+	function getCorrectAnswer(): number | string {
+		return correctAnswerOf(problem);
 	}
 
 	export { getCorrectAnswer };
@@ -101,11 +25,13 @@
 
 <style>
 	.problem-display {
-		font-size: 4rem;
+		font-size: clamp(1.8rem, 6vw, 3.4rem);
 		font-family: 'Comic Sans MS', cursive;
 		color: #333;
 		text-align: center;
 		padding: 2rem;
+		word-break: keep-all;
+		overflow-wrap: anywhere;
 	}
 
 	/* 移动端适配 */

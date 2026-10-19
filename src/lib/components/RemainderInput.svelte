@@ -12,16 +12,13 @@
 	let remainderInput = $state<HTMLInputElement>();
 
 	function handleSubmit() {
-		if (blank === 'quotient' || blank === 'both') {
-			if (!quotient) return;
-		}
-		if (blank === 'remainder' || blank === 'both') {
-			if (!remainder) return;
-		}
+		const empty = (v: unknown) => v === '' || v === null || v === undefined || Number.isNaN(Number(v));
+		if ((blank === 'quotient' || blank === 'both') && empty(quotient)) return;
+		if ((blank === 'remainder' || blank === 'both') && empty(remainder)) return;
 
 		onSubmit({
-			quotient: blank === 'quotient' || blank === 'both' ? parseInt(quotient) : -1,
-			remainder: blank === 'remainder' || blank === 'both' ? parseInt(remainder) : -1
+			quotient: blank === 'quotient' || blank === 'both' ? parseInt(String(quotient), 10) : -1,
+			remainder: blank === 'remainder' || blank === 'both' ? parseInt(String(remainder), 10) : -1
 		});
 	}
 
@@ -36,7 +33,7 @@
 	}
 
 	function focus() {
-		quotientInput?.focus();
+		(quotientInput ?? remainderInput)?.focus();
 	}
 
 	function clear() {

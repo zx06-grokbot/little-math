@@ -1,11 +1,10 @@
 <script lang="ts">
-	import type { ExerciseConfig, Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem, AnyProblem, CompareSymbol } from '$lib/types';
+	import { untrack } from 'svelte';
+	import type { ExerciseConfig, RemainderProblem, AnyProblem, CompareSymbol } from '$lib/types';
 	import { DEFAULT_CONFIG } from '$lib/config/presets';
-	import { generateProblems } from '$lib/generators/arithmetic';
-	import { generateMakeTargetProblems } from '$lib/generators/makeTarget';
-	import { generateChainProblems } from '$lib/generators/chain';
-	import { generateCompareProblems } from '$lib/generators/compare';
-	import { generateRemainderProblems } from '$lib/generators/remainder';
+	import { generateWorksheet } from '$lib/generators/worksheet';
+	import { validateConfig } from '$lib/generators/validate';
+	import { correctAnswerOf, formatProblemText, isCompare, isRemainder } from '$lib/format';
 	import Timer from '$lib/components/Timer.svelte';
 	import AnswerInput from '$lib/components/AnswerInput.svelte';
 	import CompareInput from '$lib/components/CompareInput.svelte';
@@ -14,19 +13,25 @@
 	import PracticeResult from '$lib/components/PracticeResult.svelte';
 	import PracticeConfig from '$lib/components/PracticeConfig.svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { browser } from '$app/environment';
 	import { addWrongRecord, generateWrongReview } from '$lib/services/wrongBook';
+	import { generateFavoriteReview } from '$lib/services/favorites';
 	import { checkAchievements, type Achievement } from '$lib/services/achievements';
-	import { speakProblem, stopSpeaking, isSpeechSupported } from '$lib/services/speech';
-	import { trackGeneration, getStats } from '$lib/services/statistics';
+	import { speakProblem, isSpeechSupported } from '$lib/services/speech';
+	import { savePracticeProgress, trackAnswer, getStats } from '$lib/services/statistics';
 	import AchievementToast from '$lib/components/AchievementToast.svelte';
 
 	interface AnswerRecord {
 		problem: AnyProblem;
-		userAnswer: number | CompareSymbol;
-		correctAnswer: number | CompareSymbol;
+		userAnswer: number | CompareSymbol | string;
+		correctAnswer: number | CompareSymbol | string;
 		isCorrect: boolean;
+	}
+
+	interface Feedback {
+		isCorrect: boolean;
+		correctText: string;
 	}
 
 	let config: ExerciseConfig = $state({ ...DEFAULT_CONFIG, totalCount: 10 });
@@ -37,226 +42,140 @@
 	let timerRunning = $state(false);
 	let finalTime = $state(0);
 	let answerRecords: AnswerRecord[] = $state([]);
+	let feedback = $state<Feedback | null>(null);
+	let startError = $state<string | null>(null);
+	let reviewMessage = $state<string | null>(null);
 
 	let timerRef: { reset: () => void; getSeconds: () => number } | undefined = $state();
 	let answerInputRef: { focus: () => void; clear: () => void } | undefined = $state();
 	let remainderInputRef: { focus: () => void; clear: () => void } | undefined = $state();
+	let nextBtn: HTMLButtonElement | undefined = $state();
 	let unlockedAchievements = $state<Achievement[]>([]);
 	let showSpeechButton = $state(isSpeechSupported());
+	let advanceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	function generateAllProblems(): AnyProblem[] {
-		if (config.problemMode === 'makeTarget') {
-			return generateMakeTargetProblems(config.makeTargetValue, config.totalCount);
-		}
-		if (config.problemMode === 'chain') {
-			return generateChainProblems(
-				config.range.min,
-				config.range.max,
-				config.operations,
-				config.chainLength,
-				config.totalCount
-			);
-		}
-		if (config.problemMode === 'compare') {
-			return generateCompareProblems(
-				config.range.min,
-				config.range.max,
-				config.operations,
-				config.totalCount
-			);
-		}
-		if (config.problemMode === 'remainder') {
-			return generateRemainderProblems(
-				config.range.min,
-				config.range.max,
-				config.totalCount,
-				config.remainderBlank
-			);
-		}
-		return generateProblems(config);
-	}
+	/** 在线练习不分页，校验时忽略「每页题数」 */
+	const practiceIssues = $derived(validateConfig({ ...config, countPerPage: 1 }));
 
-	function isCompareProblem(p: AnyProblem): p is CompareProblem {
-		return 'type' in p && p.type === 'compare';
-	}
-
-	function isRemainderProblem(p: AnyProblem): p is RemainderProblem {
-		return 'type' in p && p.type === 'remainder';
-	}
-
-	function handleStart() {
-		problems = generateAllProblems();
+	function startWith(list: AnyProblem[]) {
+		if (list.length === 0) return false;
+		problems = list;
 		currentIndex = 0;
 		correctCount = 0;
 		answerRecords = [];
+		feedback = null;
 		phase = 'practice';
 		timerRunning = true;
 		timerRef?.reset();
-
-		// 检查成就
-		const stats = getStats();
-		const newAchievements = checkAchievements(stats);
-		if (newAchievements.length > 0) {
-			unlockedAchievements = [...unlockedAchievements, ...newAchievements];
-		}
+		return true;
 	}
 
-	function getCorrectAnswer(problem: AnyProblem): number {
-		if ('type' in problem) {
-			if (problem.type === 'makeTarget') {
-				return (problem as MakeTargetProblem).answer;
-			}
-			if (problem.type === 'chain') {
-				const p = problem as ChainProblem;
-				return p.blank === 'result' ? p.result : p.numbers[p.blank as number];
-			}
-			if (problem.type === 'remainder') {
-				const p = problem as RemainderProblem;
-				return p.blank === 'quotient' ? p.quotient : p.remainder;
-			}
+	function handleStart() {
+		startError = null;
+		const r = generateWorksheet({ ...$state.snapshot(config), countPerPage: 1 } as ExerciseConfig);
+		if (r.issues.length || r.problems.length === 0) {
+			startError = r.issues[0]?.message ?? '当前设置下生成不了题目，请调整设置';
+			return;
 		}
-		const p = problem as Problem;
-		switch (p.blank) {
-			case 'first':
-				return p.a;
-			case 'second':
-				return p.b;
-			case 'result':
-				return p.result;
-		}
+		startWith(r.problems);
 	}
 
 	$effect(() => {
-		if (browser && $page.url.searchParams.get('mode') === 'wrong-review') {
-			const wrongProblems = generateWrongReview(10);
-			if (wrongProblems.length > 0) {
-				problems = wrongProblems;
-				config.totalCount = wrongProblems.length;
-				phase = 'practice';
-				timerRunning = true;
+		if (!browser) return;
+		const mode = page.url.searchParams.get('mode');
+		untrack(() => {
+			if (mode === 'wrong-review' || mode === 'favorite-review') {
+				const list = mode === 'wrong-review' ? generateWrongReview(10) : generateFavoriteReview(10);
+				if (!startWith(list)) {
+					reviewMessage = mode === 'wrong-review' ? '错题本是空的，先做几道题吧！' : '还没有收藏的题目';
+				}
 			}
-		}
+		});
 	});
 
 	$effect(() => {
-		if (phase === 'practice' && problems.length > 0) {
+		if (phase === 'practice' && problems.length > 0 && !feedback) {
 			const currentProblem = problems[currentIndex];
-
-			// 使用 setTimeout 确保组件已渲染
 			setTimeout(() => {
-				if (isRemainderProblem(currentProblem)) {
-					remainderInputRef?.focus();
-				} else if (!isCompareProblem(currentProblem)) {
-					answerInputRef?.focus();
-				}
+				if (isRemainder(currentProblem)) remainderInputRef?.focus();
+				else if (!isCompare(currentProblem)) answerInputRef?.focus();
 			}, 0);
 		}
 	});
 
-	function handleAnswer(answer: number) {
-		const correct = getCorrectAnswer(problems[currentIndex]);
-		const isCorrect = answer === correct;
+	function answerText(p: AnyProblem): string {
+		if (isRemainder(p)) return `商 ${p.quotient}，余数 ${p.remainder}`;
+		return String(correctAnswerOf(p));
+	}
 
-		answerRecords.push({
-			problem: problems[currentIndex],
-			userAnswer: answer,
-			correctAnswer: correct,
-			isCorrect
-		});
+	/** 记录一道题的作答并显示即时反馈 */
+	function record(userAnswer: AnswerRecord['userAnswer'], correctAnswer: AnswerRecord['correctAnswer'], isCorrect: boolean) {
+		const problem = problems[currentIndex];
+		answerRecords.push({ problem, userAnswer, correctAnswer, isCorrect });
+		if (isCorrect) correctCount++;
+		else addWrongRecord($state.snapshot(problem) as AnyProblem, userAnswer, correctAnswer);
+		const stats = trackAnswer(problem, isCorrect);
+		const fresh = checkAchievements(stats);
+		if (fresh.length) unlockedAchievements = [...unlockedAchievements, ...fresh];
 
+		feedback = { isCorrect, correctText: answerText(problem) };
+		clearTimeout(advanceTimer);
 		if (isCorrect) {
-			correctCount++;
+			advanceTimer = setTimeout(moveToNext, 900);
 		} else {
-			addWrongRecord(problems[currentIndex], answer, correct);
+			setTimeout(() => nextBtn?.focus(), 0);
 		}
+	}
 
-		moveToNext();
+	function handleAnswer(answer: number) {
+		if (feedback) return;
+		const correct = correctAnswerOf(problems[currentIndex]) as number;
+		record(answer, correct, answer === correct);
 	}
 
 	function handleRemainderAnswer(answer: { quotient: number; remainder: number }) {
+		if (feedback) return;
 		const problem = problems[currentIndex] as RemainderProblem;
 		let isCorrect = true;
-
-		// 根据留空位置检查答案
-		if (problem.blank === 'quotient' || problem.blank === 'both') {
-			if (answer.quotient !== problem.quotient) {
-				isCorrect = false;
-			}
-		}
-		if (problem.blank === 'remainder' || problem.blank === 'both') {
-			if (answer.remainder !== problem.remainder) {
-				isCorrect = false;
-			}
-		}
-
-		// 构造用户答案字符串用于记录
+		if ((problem.blank === 'quotient' || problem.blank === 'both') && answer.quotient !== problem.quotient) isCorrect = false;
+		if ((problem.blank === 'remainder' || problem.blank === 'both') && answer.remainder !== problem.remainder) isCorrect = false;
 		const userAnswerStr =
 			problem.blank === 'both'
 				? `商: ${answer.quotient}, 余数: ${answer.remainder}`
 				: problem.blank === 'quotient'
-					? `商: ${answer.quotient} (余数: ${problem.remainder})`
-					: `商: ${problem.quotient}, 余数: ${answer.remainder}`;
-
-		// 构造正确答案字符串
-		const correctAnswerStr = `商: ${problem.quotient}, 余数: ${problem.remainder}`;
-
-		answerRecords.push({
-			problem: problems[currentIndex],
-			userAnswer: userAnswerStr as any,
-			correctAnswer: correctAnswerStr as any,
-			isCorrect
-		});
-
-		if (isCorrect) {
-			correctCount++;
-		} else {
-			addWrongRecord(problems[currentIndex], userAnswerStr as any, correctAnswerStr as any);
-		}
-
-		moveToNext();
+					? `商: ${answer.quotient}`
+					: `余数: ${answer.remainder}`;
+		record(userAnswerStr, `商: ${problem.quotient}, 余数: ${problem.remainder}`, isCorrect);
 	}
 
 	function handleCompareAnswer(answer: CompareSymbol) {
-		const problem = problems[currentIndex] as CompareProblem;
-		const isCorrect = answer === problem.answer;
-
-		answerRecords.push({
-			problem: problems[currentIndex],
-			userAnswer: answer,
-			correctAnswer: problem.answer,
-			isCorrect
-		});
-
-		if (isCorrect) {
-			correctCount++;
-		}
-
-		moveToNext();
+		if (feedback) return;
+		const problem = problems[currentIndex];
+		if (!isCompare(problem)) return;
+		record(answer, problem.answer, answer === problem.answer);
 	}
 
 	function moveToNext() {
+		clearTimeout(advanceTimer);
+		feedback = null;
 		if (currentIndex < problems.length - 1) {
 			currentIndex++;
-			const nextProblem = problems[currentIndex];
-
-			if (isRemainderProblem(nextProblem)) {
-				remainderInputRef?.clear();
-				remainderInputRef?.focus();
-			} else if (isCompareProblem(nextProblem)) {
-				// CompareInput 不需要 focus
-			} else {
-				answerInputRef?.clear();
-				answerInputRef?.focus();
-			}
+			answerInputRef?.clear();
+			remainderInputRef?.clear();
 		} else {
 			timerRunning = false;
 			finalTime = timerRef?.getSeconds() ?? 0;
+			savePracticeProgress({ totalProblems: problems.length, correctProblems: correctCount, timeSpent: finalTime });
+			const fresh = checkAchievements(getStats());
+			if (fresh.length) unlockedAchievements = [...unlockedAchievements, ...fresh];
 			phase = 'result';
 		}
 	}
 
 	function handleRestart() {
 		phase = 'config';
+		reviewMessage = null;
+		if (page.url.searchParams.get('mode')) goto('/practice', { replaceState: true });
 	}
 
 	function handleBackHome() {
@@ -276,11 +195,12 @@
 
 	<main>
 		{#if phase === 'config'}
-			<PracticeConfig bind:config onStart={handleStart} />
-		{:else if phase === 'practice'}
-			<div class="practice-area">
+			{#if reviewMessage}<p class="review-msg">{reviewMessage}</p>{/if}
+			<PracticeConfig bind:config issues={practiceIssues} error={startError} onStart={handleStart} />
+		{:else if phase === 'practice' && problems.length > 0}
+			<div class="practice-area" data-testid="practice-area">
 				<div class="top-bar">
-					<div class="progress">第 {currentIndex + 1} / {problems.length} 题</div>
+					<div class="progress" data-testid="practice-progress">第 {currentIndex + 1} / {problems.length} 题</div>
 					<div class="top-bar-right">
 						{#if showSpeechButton}
 							<button class="speech-btn" onclick={() => speakProblem(problems[currentIndex])} title="读题">
@@ -291,9 +211,21 @@
 					</div>
 				</div>
 				<ProblemDisplay problem={problems[currentIndex]} />
-				{#if isCompareProblem(problems[currentIndex])}
+				{#if feedback}
+					<div class="feedback" class:ok={feedback.isCorrect} class:bad={!feedback.isCorrect} data-testid="feedback" role="status">
+						{#if feedback.isCorrect}
+							✅ 答对了！
+						{:else}
+							❌ 答错了，正确答案：<strong>{feedback.correctText}</strong>
+							<div class="full">{formatProblemText(problems[currentIndex], true)}</div>
+							<button class="next-btn" bind:this={nextBtn} onclick={moveToNext}>
+								{currentIndex < problems.length - 1 ? '下一题 →' : '查看结果'}
+							</button>
+						{/if}
+					</div>
+				{:else if isCompare(problems[currentIndex])}
 					<CompareInput onSubmit={handleCompareAnswer} />
-				{:else if isRemainderProblem(problems[currentIndex])}
+				{:else if isRemainder(problems[currentIndex])}
 					<RemainderInput
 						bind:this={remainderInputRef}
 						blank={(problems[currentIndex] as RemainderProblem).blank}
@@ -316,10 +248,13 @@
 	</main>
 
 	<!-- 成就提示 -->
-	{#each unlockedAchievements as achievement}
-		<AchievementToast achievement={achievement} onClose={() => {
-			unlockedAchievements = unlockedAchievements.filter((a) => a.id !== achievement.id);
-		}} />
+	{#each unlockedAchievements as achievement (achievement.id)}
+		<AchievementToast
+			{achievement}
+			onClose={() => {
+				unlockedAchievements = unlockedAchievements.filter((a) => a.id !== achievement.id);
+			}}
+		/>
 	{/each}
 </div>
 
@@ -376,6 +311,41 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+	}
+	.feedback {
+		margin-top: 1rem;
+		padding: 1rem 1.25rem;
+		border-radius: 14px;
+		text-align: center;
+		font-size: 1.4rem;
+	}
+	.feedback.ok {
+		background: #ebfbee;
+		color: #2b8a3e;
+	}
+	.feedback.bad {
+		background: #fff5f5;
+		color: #c92a2a;
+	}
+	.feedback .full {
+		margin-top: 0.5rem;
+		font-size: 1.1rem;
+		color: #555;
+	}
+	.next-btn {
+		margin-top: 0.75rem;
+		padding: 0.6rem 1.5rem;
+		font-size: 1.1rem;
+		border: none;
+		border-radius: 10px;
+		background: linear-gradient(135deg, #5c7cfa, #845ef7);
+		color: white;
+		cursor: pointer;
+		font-family: inherit;
+	}
+	.review-msg {
+		text-align: center;
+		color: #e8590c;
 	}
 	.speech-btn {
 		padding: 0.5rem 1rem;

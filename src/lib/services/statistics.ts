@@ -1,21 +1,42 @@
-import type { StatisticsData, Operation, DailyStatRecord, PracticeProgressRecord } from '$lib/types';
+import type { StatisticsData, Operation, PracticeProgressRecord, AnyProblem } from '$lib/types';
 import { INITIAL_STATS } from '$lib/types';
+import { operationsOf } from '$lib/format';
+
+/** 每次都返回一份新的初始数据，避免修改共享的 INITIAL_STATS 常量 */
+function freshStats(): StatisticsData {
+	return JSON.parse(JSON.stringify(INITIAL_STATS));
+}
+
+/** 补齐旧版本数据缺少的字段 */
+function normalize(stats: Partial<StatisticsData>): StatisticsData {
+	const base = freshStats();
+	return {
+		...base,
+		...stats,
+		operationsCount: { ...base.operationsCount, ...(stats.operationsCount ?? {}) },
+		answeredByOp: { ...base.answeredByOp!, ...(stats.answeredByOp ?? {}) },
+		gradePresetCount: { ...(stats.gradePresetCount ?? {}) },
+		dailyStats: { ...(stats.dailyStats ?? {}) },
+		totalAnswered: stats.totalAnswered ?? 0,
+		totalCorrect: stats.totalCorrect ?? 0
+	};
+}
 
 const STORAGE_KEY = 'little-math-stats';
 
 /** 获取统计数据 */
 export function getStats(): StatisticsData {
-	if (typeof window === 'undefined') return INITIAL_STATS;
+	if (typeof window === 'undefined') return freshStats();
 
 	try {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored) {
-			return JSON.parse(stored) as StatisticsData;
+			return normalize(JSON.parse(stored) as Partial<StatisticsData>);
 		}
 	} catch (error) {
 		console.error('Failed to load stats:', error);
 	}
-	return INITIAL_STATS;
+	return freshStats();
 }
 
 /** 保存统计数据 */
@@ -29,9 +50,16 @@ function saveStats(stats: StatisticsData): void {
 	}
 }
 
-/** 获取今天的日期字符串（YYYY-MM-DD） */
+/** 本地日期字符串（YYYY-MM-DD），按用户所在时区计算 */
+export function localDateKey(date: Date = new Date()): string {
+	const m = String(date.getMonth() + 1).padStart(2, '0');
+	const d = String(date.getDate()).padStart(2, '0');
+	return `${date.getFullYear()}-${m}-${d}`;
+}
+
+/** 获取今天的日期字符串（YYYY-MM-DD，本地时间） */
 function getToday(): string {
-	return new Date().toISOString().split('T')[0];
+	return localDateKey();
 }
 
 /** 更新每日统计 */
@@ -90,7 +118,21 @@ export function trackPrint(): void {
 
 /** 重置统计数据 */
 export function resetStats(): void {
-	saveStats(INITIAL_STATS);
+	saveStats(freshStats());
+}
+
+/** 在线练习每答一道题记录一次（用于「完成 N 道题」等成就） */
+export function trackAnswer(problem: AnyProblem, isCorrect: boolean): StatisticsData {
+	const stats = getStats();
+	stats.totalAnswered = (stats.totalAnswered ?? 0) + 1;
+	if (isCorrect) stats.totalCorrect = (stats.totalCorrect ?? 0) + 1;
+	for (const op of operationsOf(problem)) {
+		stats.answeredByOp![op] = (stats.answeredByOp![op] ?? 0) + 1;
+	}
+	const today = getToday();
+	if (!stats.dailyStats[today]) stats.dailyStats[today] = { visits: 0, generations: 0, prints: 0 };
+	saveStats(stats);
+	return stats;
 }
 
 /** 获取最近7天的统计数据 */
@@ -101,7 +143,7 @@ export function getLast7DaysStats() {
 	for (let i = 6; i >= 0; i--) {
 		const date = new Date();
 		date.setDate(date.getDate() - i);
-		const dateStr = date.toISOString().split('T')[0];
+		const dateStr = localDateKey(date);
 
 		result.push({
 			date: dateStr,
@@ -158,7 +200,7 @@ export function getDailyProgress(days: number = 7): Array<{
 	for (let i = days - 1; i >= 0; i--) {
 		const date = new Date();
 		date.setDate(date.getDate() - i);
-		const dateStr = date.toISOString().split('T')[0];
+		const dateStr = localDateKey(date);
 
 		const dayStats = stats.dailyStats[dateStr];
 		const progressList = dayStats?.practiceProgress || [];

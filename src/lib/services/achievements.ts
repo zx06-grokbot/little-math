@@ -19,63 +19,63 @@ const ACHIEVEMENTS: Achievement[] = [
 		name: '初露锋芒',
 		description: '完成 10 道题',
 		icon: '⭐',
-		condition: (stats) => stats.totalGenerations >= 10
+		condition: (stats) => (stats.totalAnswered ?? 0) >= 10
 	},
 	{
 		id: 'first-50',
 		name: '小试牛刀',
 		description: '完成 50 道题',
 		icon: '🌟',
-		condition: (stats) => stats.totalGenerations >= 50
+		condition: (stats) => (stats.totalAnswered ?? 0) >= 50
 	},
 	{
 		id: 'first-100',
 		name: '小小数学家',
 		description: '完成 100 道题',
 		icon: '🏆',
-		condition: (stats) => stats.totalGenerations >= 100
+		condition: (stats) => (stats.totalAnswered ?? 0) >= 100
 	},
 	{
 		id: 'first-500',
 		name: '数学达人',
 		description: '完成 500 道题',
 		icon: '👑',
-		condition: (stats) => stats.totalGenerations >= 500
+		condition: (stats) => (stats.totalAnswered ?? 0) >= 500
 	},
 	{
 		id: 'first-1000',
 		name: '数学大师',
 		description: '完成 1000 道题',
 		icon: '🎖️',
-		condition: (stats) => stats.totalGenerations >= 1000
+		condition: (stats) => (stats.totalAnswered ?? 0) >= 1000
 	},
 	{
 		id: 'add-master',
 		name: '加法专家',
 		description: '完成 100 道加法题',
 		icon: '➕',
-		condition: (stats) => stats.operationsCount.add >= 100
+		condition: (stats) => (stats.answeredByOp?.add ?? 0) >= 100
 	},
 	{
 		id: 'sub-master',
 		name: '减法专家',
 		description: '完成 100 道减法题',
 		icon: '➖',
-		condition: (stats) => stats.operationsCount.sub >= 100
+		condition: (stats) => (stats.answeredByOp?.sub ?? 0) >= 100
 	},
 	{
 		id: 'mul-master',
 		name: '乘法专家',
 		description: '完成 100 道乘法题',
 		icon: '✖️',
-		condition: (stats) => stats.operationsCount.mul >= 100
+		condition: (stats) => (stats.answeredByOp?.mul ?? 0) >= 100
 	},
 	{
 		id: 'div-master',
 		name: '除法专家',
 		description: '完成 100 道除法题',
 		icon: '➗',
-		condition: (stats) => stats.operationsCount.div >= 100
+		condition: (stats) => (stats.answeredByOp?.div ?? 0) >= 100
 	},
 	{
 		id: 'print-lover',
@@ -90,16 +90,13 @@ const ACHIEVEMENTS: Achievement[] = [
 		description: '连续练习 7 天',
 		icon: '🔥',
 		condition: (stats) => {
-			const days = Object.keys(stats.dailyStats);
-			if (days.length < 7) return false;
-			const sortedDays = days.sort();
-			const today = new Date().toISOString().split('T')[0];
-			const todayDate = new Date(today);
+			// 按本地日期检查最近 7 天每天都有练习记录
 			for (let i = 0; i < 7; i++) {
-				const checkDate = new Date(todayDate);
-				checkDate.setDate(checkDate.getDate() - i);
-				const checkStr = checkDate.toISOString().split('T')[0];
-				if (!stats.dailyStats[checkStr]) return false;
+				const d = new Date();
+				d.setDate(d.getDate() - i);
+				const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+				const day = stats.dailyStats[key];
+				if (!day || !(day.practiceProgress?.length)) return false;
 			}
 			return true;
 		}
