@@ -406,13 +406,18 @@
 	.aligned .tk-num,
 	.aligned .tk-blank,
 	.aligned .tk-ans {
-		width: calc(var(--digits) * 1ch + 0.9em);
-		min-width: calc(var(--digits) * 1ch + 0.9em);
+		/* digits + 2 for wrapping parentheses on blank/ans, e.g. (100) */
+		width: calc((var(--digits) + 2) * 1ch + 0.5em);
+		min-width: calc((var(--digits) + 2) * 1ch + 0.5em);
 		margin: 0;
 		text-align: right;
 		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
 		font-variant-numeric: tabular-nums;
 		font-weight: 600;
+	}
+	.aligned .tk-blank,
+	.aligned .tk-ans {
+		text-align: center;
 	}
 	.aligned .tk-ans:not(:first-child):not(:last-child) {
 		margin: 0;
