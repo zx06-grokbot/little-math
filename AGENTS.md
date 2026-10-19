@@ -4,11 +4,15 @@
 
 ## 命令
 
+需要 Node.js 22+ pnpm 11（corepack）。
+
 ```bash
 pnpm install    # 安装依赖
 pnpm dev        # 启动开发服务器
 pnpm build      # 构建生产版本
 pnpm check      # 类型检查
+pnpm test       # 单元测试（vitest，src/**/*.test.ts）
+pnpm test:e2e   # 端到端测试（Playwright，tests/e2e；检查打印 / PDF 页数与版式）
 pnpm preview    # 预览构建结果
 ```
 
@@ -130,12 +134,17 @@ interface WrongRecord {
 
 ## 题目生成约束
 
-- 减法结果 ≥ 0（不产生负数）
-- 除法必须整除（无余数，除 remainder 模式外）
-- 有余数除法：余数在 1 到除数-1 之间
-- 同一批次避免重复题目
-- 填空位置按配置比例随机分配
-- totalCount 和 countPerPage 为 0 时使用默认值 20
+详细规则见 README「出题规则」和 `src/lib/generators/rules.ts`，要点：
+
+- 加减法：所有数（含结果）都在 [min, max]；减法不出负数
+- 乘除法：积 / 被除数在 [min, max]，整除；因数从 2 起（min² ≤ max 时 ≥ min）；可选表内（≤ 9）
+- 连续运算：先乘除后加减；每一步中间结果和答案都是 0～max 的整数
+- 比较大小：<、>、= 各约 1/3
+- 有余数除法：被除数在 [min, max]，除数 2～9，余数在 1 到除数-1 之间
+- 同一批次先出不重复的题，不够时重复补足并提示用户（不再悄悄少出题）
+- 填空位置按配置的权重随机分配，且保证答案唯一
+- 统一入口 `generateWorksheet()` 会先 `validateConfig()`；配置无效时不出题、界面显示错误
+- 修改生成器时请同步更新 `generators.test.ts`
 
 ## UI 设计规范
 
@@ -150,11 +159,11 @@ interface WrongRecord {
 
 ## 打印相关
 
-- 使用 `@media print` 控制打印样式
-- 使用 `print-color-adjust: exact` 保留彩色
-- 使用 `@page { margin: 0 }` 让背景覆盖整页
+- 每个 `.page` 固定 210mm × 297mm，一页网页 = 一张 A4（屏幕、打印、PDF 一致）
+- 每页最多题数定义在 `src/lib/config/layout.ts`，ExerciseSheet 按行数均分整页高度
+- 使用 `@page { size: A4; margin: 0 }`，页与页之间 `break-before: page`
+- 导出 PDF：`services/pdfExport.ts` 逐页 html2canvas → jsPDF 一页 A4，按需动态加载
 - 打印时隐藏配置面板，只显示练习题
-- 答案页通过 `page-break-before: always` 分页
 
 ## 统计功能
 
@@ -198,7 +207,7 @@ interface WrongRecord {
 
 ### 依赖安全
 
-- 使用 pnpm.overrides 强制升级有漏洞的包
+- 在 pnpm-workspace.yaml 的 overrides 中强制升级有漏洞的包（pnpm 10+ 不再读取 package.json 的 "pnpm" 字段）
 - 修复 CVE-2024-47764（cookie XSS 漏洞）
 - 修复 GHSA-8qq5-rm4j-mr97 和 GHSA-r6q2-hw4h-h46w（tar 路径遍历漏洞）
 
@@ -209,22 +218,17 @@ interface WrongRecord {
 - 漏洞类型：XSS（跨站脚本攻击）
 - 影响：cookie 名称、路径和域名的验证不严格，可能导致攻击者注入恶意代码
 
-**修复方案：**
-```json
-{
-  "pnpm": {
-    "overrides": {
-      "cookie": "^0.7.0",
-      "tar": "^7.5.4"
-    }
-  }
-}
+**修复方案（pnpm-workspace.yaml）：**
+```yaml
+overrides:
+  cookie: ^0.7.0
+  tar: ^7.5.4
 ```
 
 **为什么需要 overrides：**
 - `@sveltejs/kit` 2.x 系列的所有版本都依赖 `cookie ^0.6.0`
 - 即使升级到最新版本的 `@sveltejs/kit`，也无法直接解决此漏洞
-- 使用 pnpm.overrides 可以强制覆盖依赖树中的 cookie 版本
+- 使用 overrides 可以强制覆盖依赖树中的 cookie 版本
 
 **验证：**
 ```bash
