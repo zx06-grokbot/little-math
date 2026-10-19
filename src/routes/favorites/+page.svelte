@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { AnyProblem, Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem } from '$lib/types';
-	import { OP_SYMBOLS } from '$lib/types';
+	import type { AnyProblem } from '$lib/types';
+	import { formatProblemText } from '$lib/format';
 	import { getFavorites, clearFavorites, removeFavorite } from '$lib/services/favorites';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
@@ -14,38 +14,7 @@
 	});
 
 	function formatProblem(problem: AnyProblem): string {
-		if ('type' in problem) {
-			if (problem.type === 'makeTarget') {
-				const p = problem as MakeTargetProblem;
-				return p.blankFirst ? `___ + ${p.a} = ${p.target}` : `${p.a} + ___ = ${p.target}`;
-			}
-			if (problem.type === 'chain') {
-				const p = problem as ChainProblem;
-				let str = '';
-				for (let i = 0; i < p.numbers.length; i++) {
-					str += p.numbers[i];
-					if (i < p.ops.length) {
-						str += ` ${OP_SYMBOLS[p.ops[i]]} `;
-					}
-				}
-				return str + ' = ___';
-			}
-			if (problem.type === 'compare') {
-				const p = problem as CompareProblem;
-				const left = `${p.left.a} ${OP_SYMBOLS[p.left.op]} ${p.left.b}`;
-				const right = `${p.right.a} ${OP_SYMBOLS[p.right.op]} ${p.right.b}`;
-				return `${left} ___ ${right}`;
-			}
-			if (problem.type === 'remainder') {
-				const p = problem as any;
-				return `${p.dividend} ÷ ${p.divisor} = ___ ... ___`;
-			}
-		}
-		const p = problem as Problem;
-		const first = p.blank === 'first' ? '___' : p.a;
-		const second = p.blank === 'second' ? '___' : p.b;
-		const result = p.blank === 'result' ? '___' : p.result;
-		return `${first} ${OP_SYMBOLS[p.op]} ${second} = ${result}`;
+		return formatProblemText(problem);
 	}
 
 	function formatDate(timestamp: number): string {

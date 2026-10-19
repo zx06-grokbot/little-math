@@ -93,6 +93,8 @@ export interface ExerciseConfig {
 	makeTargetValue: MakeTargetValue;
 	chainLength: 3 | 4;
 	remainderBlank: 'quotient' | 'remainder' | 'both';
+	/** 乘除只出表内（因数、除数、商不超过 9） */
+	tableMulDiv?: boolean;
 }
 
 /** 运算符显示映射 */
@@ -135,6 +137,12 @@ export interface StatisticsData {
 	gradePresetCount: Record<string, number>;
 	lastVisitDate: string;
 	dailyStats: Record<string, DailyStatRecord>;
+	/** 在线练习中实际作答的题数 */
+	totalAnswered?: number;
+	/** 在线练习中答对的题数 */
+	totalCorrect?: number;
+	/** 在线练习中各运算作答题数 */
+	answeredByOp?: Record<Operation, number>;
 }
 
 /** 任意题目类型 */
@@ -157,5 +165,8 @@ export const INITIAL_STATS: StatisticsData = {
 	operationsCount: { add: 0, sub: 0, mul: 0, div: 0 },
 	gradePresetCount: {},
 	lastVisitDate: '',
-	dailyStats: {}
+	dailyStats: {},
+	totalAnswered: 0,
+	totalCorrect: 0,
+	answeredByOp: { add: 0, sub: 0, mul: 0, div: 0 }
 };

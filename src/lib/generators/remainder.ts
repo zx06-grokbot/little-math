@@ -1,71 +1,73 @@
 import type { RemainderProblem } from '$lib/types';
+import type { Rng } from './random';
+import { defaultRng, randInt } from './random';
+import { fillProblems, type FillResult } from './fill';
+
+/** 有余数除法的除数范围（表内：2～9） */
+export const REMAINDER_DIVISOR_MIN = 2;
+export const REMAINDER_DIVISOR_MAX = 9;
+
+/** 被除数的最小可能值（3 ÷ 2 = 1 … 1） */
+export const REMAINDER_MIN_DIVIDEND = 3;
+
+export function isRemainderFeasible(min: number, max: number): boolean {
+	return Number.isInteger(min) && Number.isInteger(max) && max >= Math.max(min, REMAINDER_MIN_DIVIDEND);
+}
 
 /**
  * 生成一道有余数除法题目
- * @param min 被除数最小值
- * @param max 被除数最大值
- * @param blank 留空位置
- * @returns RemainderProblem
+ * 规则：被除数在 [min, max] 内；除数 2～9 且小于被除数；余数在 1～除数-1 之间；商 ≥ 1。
  */
 export function generateRemainderProblem(
 	min: number,
 	max: number,
-	blank: 'quotient' | 'remainder' | 'both' = 'quotient'
-): RemainderProblem {
-	// 确保除数在 2-9 之间，适合小学练习
-	const divisor = Math.floor(Math.random() * 8) + 2;
+	blank: 'quotient' | 'remainder' | 'both' = 'quotient',
+	rng: Rng = defaultRng
+): RemainderProblem | null {
+	if (!isRemainderFeasible(min, max)) return null;
+	const lo = Math.max(min, REMAINDER_MIN_DIVIDEND);
+	for (let i = 0; i < 100; i++) {
+		const dividend = randInt(rng, lo, max)!;
+		const divisor = randInt(rng, REMAINDER_DIVISOR_MIN, Math.min(REMAINDER_DIVISOR_MAX, dividend - 1));
+		if (divisor === null) continue;
+		const remainder = dividend % divisor;
+		if (remainder === 0) continue;
+		return {
+			type: 'remainder',
+			dividend,
+			divisor,
+			quotient: Math.floor(dividend / divisor),
+			remainder,
+			blank
+		};
+	}
+	return null;
+}
 
-	// 根据 min/max 计算商的范围
-	const minQuotient = Math.max(1, Math.floor(min / divisor));
-	const maxQuotient = Math.max(minQuotient, Math.floor(max / divisor));
-	const quotient = Math.floor(Math.random() * (maxQuotient - minQuotient + 1)) + minQuotient;
-
-	// 余数在 1 到 divisor-1 之间
-	const remainder = Math.floor(Math.random() * (divisor - 1)) + 1;
-	const dividend = divisor * quotient + remainder;
-
-	return {
-		type: 'remainder',
-		dividend,
-		divisor,
-		quotient,
-		remainder,
-		blank
-	};
+export function generateRemainderProblemsDetailed(
+	min: number,
+	max: number,
+	count: number,
+	blank: 'quotient' | 'remainder' | 'both' = 'quotient',
+	rng: Rng = defaultRng
+): FillResult<RemainderProblem> {
+	return fillProblems(
+		count,
+		() => generateRemainderProblem(min, max, blank, rng),
+		(p) => `${p.dividend}÷${p.divisor}`,
+		rng
+	);
 }
 
 /**
  * 生成多道有余数除法题目
- * @param min 被除数最小值
- * @param max 被除数最大值
- * @param count 题目数量
- * @param blank 留空位置
- * @returns RemainderProblem[]
  */
 export function generateRemainderProblems(
 	min: number,
 	max: number,
 	count: number,
-	blank: 'quotient' | 'remainder' | 'both' = 'quotient'
+	blank: 'quotient' | 'remainder' | 'both' = 'quotient',
+	rng: Rng = defaultRng
 ): RemainderProblem[] {
-	const problems: RemainderProblem[] = [];
-	const seen = new Set<string>();
-
-	let attempts = 0;
-	const maxAttempts = count * 10; // 防止无限循环
-
-	while (problems.length < count && attempts < maxAttempts) {
-		const problem = generateRemainderProblem(min, max, blank);
-		const key = `${problem.dividend}÷${problem.divisor}`;
-
-		// 避免重复题目
-		if (!seen.has(key)) {
-			seen.add(key);
-			problems.push(problem);
-		}
-
-		attempts++;
-	}
-
-	return problems;
+	return generateRemainderProblemsDetailed(min, max, count, blank, rng).problems;
 }

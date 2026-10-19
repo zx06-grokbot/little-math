@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { AnyProblem, Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem, CompareSymbol } from '$lib/types';
-	import { OP_SYMBOLS } from '$lib/types';
-	import { addFavorite, isFavorited } from '$lib/services/favorites';
+	import type { AnyProblem, CompareSymbol } from '$lib/types';
+	import { addFavorite, getFavorites, removeFavorite } from '$lib/services/favorites';
+	import { formatProblemText, problemId } from '$lib/format';
 
 	interface AnswerRecord {
 		problem: AnyProblem;
@@ -38,60 +38,8 @@
 		return '💪';
 	}
 
-	function formatExpression(a: number, b: number, op: string): string {
-		return `${a} ${op} ${b}`;
-	}
-
 	function formatProblem(problem: AnyProblem): string {
-		if ('type' in problem) {
-			if (problem.type === 'makeTarget') {
-				const p = problem as MakeTargetProblem;
-				return p.blankFirst ? `___ + ${p.a} = ${p.target}` : `${p.a} + ___ = ${p.target}`;
-			}
-			if (problem.type === 'chain') {
-				const p = problem as ChainProblem;
-				let str = '';
-				for (let i = 0; i < p.numbers.length; i++) {
-					str += p.numbers[i];
-					if (i < p.ops.length) {
-						str += ` ${OP_SYMBOLS[p.ops[i]]} `;
-					}
-				}
-				return str + ' = ___';
-			}
-			if (problem.type === 'compare') {
-				const p = problem as CompareProblem;
-				const left = formatExpression(p.left.a, p.left.b, OP_SYMBOLS[p.left.op]);
-				const right = formatExpression(p.right.a, p.right.b, OP_SYMBOLS[p.right.op]);
-				return `${left} ___ ${right}`;
-			}
-			if (problem.type === 'remainder') {
-				const p = problem as RemainderProblem;
-				let str = '';
-				str += `${p.dividend} ÷ ${p.divisor} = `;
-				
-				if (p.blank === 'quotient' || p.blank === 'both') {
-					str += p.blank === 'quotient' ? '___' : p.quotient;
-				} else {
-					str += p.quotient;
-				}
-				
-				str += ' ... ';
-				
-				if (p.blank === 'remainder' || p.blank === 'both') {
-					str += p.blank === 'remainder' ? '___' : p.remainder;
-				} else {
-					str += p.remainder;
-				}
-				
-				return str;
-			}
-		}
-		const p = problem as Problem;
-		const first = p.blank === 'first' ? '___' : p.a;
-		const second = p.blank === 'second' ? '___' : p.b;
-		const result = p.blank === 'result' ? '___' : p.result;
-		return `${first} ${OP_SYMBOLS[p.op]} ${second} = ${result}`;
+		return formatProblemText(problem);
 	}
 
 	function formatAnswer(answer: number | CompareSymbol | string, problem: AnyProblem): string {
@@ -113,9 +61,19 @@
 		return String(answer);
 	}
 
+	/** 已收藏题目的 id 集合（响应式，点击后星标立即点亮） */
+	let favoriteIds = $state(new Set(getFavorites().map((f) => problemId(f.problem))));
+
 	function handleFavorite(problem: AnyProblem, e: Event) {
 		e.stopPropagation();
-		addFavorite(problem);
+		const id = problemId($state.snapshot(problem) as AnyProblem);
+		if (favoriteIds.has(id)) {
+			const fav = getFavorites().find((f) => problemId(f.problem) === id);
+			if (fav) removeFavorite(fav.timestamp);
+		} else {
+			addFavorite($state.snapshot(problem) as AnyProblem);
+		}
+		favoriteIds = new Set(getFavorites().map((f) => problemId(f.problem)));
 	}
 </script>
 
@@ -149,8 +107,14 @@
 						<span class="index">{idx + 1}.</span>
 						<span class="problem">{formatProblem(record.problem)}</span>
 						<span class="status">{record.isCorrect ? '✓' : '✗'}</span>
-						<button class="favorite-btn" onclick={(e) => handleFavorite(record.problem, e)} title="收藏此题">
-							{isFavorited(record.problem) ? '⭐' : '☆'}
+						<button
+							class="favorite-btn"
+							class:on={favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem))}
+							onclick={(e) => handleFavorite(record.problem, e)}
+							title={favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '取消收藏' : '收藏此题'}
+							data-testid="favorite-btn"
+						>
+							{favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '⭐' : '☆'}
 						</button>
 					</div>
 					{#if !record.isCorrect}

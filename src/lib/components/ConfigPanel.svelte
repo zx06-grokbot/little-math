@@ -1,12 +1,11 @@
 <script lang="ts">
 	import type { ExerciseConfig, Operation, BlankPosition, MakeTargetValue } from '$lib/types';
 	import { OP_NAMES } from '$lib/types';
-	import {
-		GRADE_PRESETS,
-		OP_COMBOS,
-		HORIZONTAL_COUNT_PER_PAGE,
-		VERTICAL_COUNT_PER_PAGE
-	} from '$lib/config/presets';
+	import { GRADE_PRESETS } from '$lib/config/presets';
+	import { getLayout, supportsVertical } from '$lib/config/layout';
+	import { usesOperations, usesRange, TOTAL_COUNT_LIMIT, type ValidationIssue, type ConfigField } from '$lib/generators/validate';
+	import { RANGE_RULE_TEXT } from '$lib/generators/rules';
+	import { REMAINDER_DIVISOR_MAX, REMAINDER_DIVISOR_MIN } from '$lib/generators/remainder';
 	import { zh } from '$lib/i18n/zh';
 	import { track } from '$lib/actions/track';
 	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
@@ -15,6 +14,9 @@
 
 	interface Props {
 		config: ExerciseConfig;
+		issues: ValidationIssue[];
+		autoTitle: string;
+		layoutNote?: string | null;
 		onGenerate: () => void;
 		onPrint: () => void;
 		onExportPdf?: () => void;
@@ -23,9 +25,30 @@
 		onThemeChange: (theme: string) => void;
 	}
 
-	let { config = $bindable(), onGenerate, onPrint, onExportPdf, isExportingPdf = false, theme, onThemeChange }: Props = $props();
+	let {
+		config = $bindable(),
+		issues,
+		autoTitle,
+		layoutNote = null,
+		onGenerate,
+		onPrint,
+		onExportPdf,
+		isExportingPdf = false,
+		theme,
+		onThemeChange
+	}: Props = $props();
 
 	const t = zh.config;
+	const layout = $derived(getLayout(config));
+	const canPrint = $derived(issues.length === 0);
+	const verticalSupported = $derived(supportsVertical(config.problemMode));
+	const showOps = $derived(usesOperations(config.problemMode));
+	const showRange = $derived(usesRange(config.problemMode));
+	const hasMulDiv = $derived(config.operations.includes('mul') || config.operations.includes('div'));
+
+	function errorsFor(...fields: ConfigField[]): string[] {
+		return issues.filter((i) => fields.includes(i.field)).map((i) => i.message);
+	}
 
 	function handlePresetChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
@@ -36,33 +59,33 @@
 		}
 	}
 
-	function handleVerticalChange() {
-		config.countPerPage = config.isVertical ? VERTICAL_COUNT_PER_PAGE : HORIZONTAL_COUNT_PER_PAGE;
-		config.totalCount = config.countPerPage;
+	/** 允许取消到 0 个运算：界面和实际状态保持一致，并提示“至少选择一种运算” */
+	function toggleOperation(op: Operation, checked: boolean) {
+		const set = new Set(config.operations);
+		if (checked) set.add(op);
+		else set.delete(op);
+		config.operations = (['add', 'sub', 'mul', 'div'] as Operation[]).filter((o) => set.has(o));
 	}
 
-	function toggleOperation(op: Operation) {
-		if (config.operations.includes(op)) {
-			if (config.operations.length > 1) {
-				config.operations = config.operations.filter((o) => o !== op);
-			}
-		} else {
-			config.operations = [...config.operations, op];
-		}
-	}
-
+	/** 三个滑块是独立的权重，互不影响；实际比例 = 权重 / 总和 */
 	function updateBlankRatio(pos: BlankPosition, value: number) {
-		const newRatio = { ...config.blankRatio };
-		newRatio[pos] = value / 100;
-
-		const total = Object.values(newRatio).reduce((a, b) => a + b, 0);
-		if (total > 0) {
-			Object.keys(newRatio).forEach((key) => {
-				newRatio[key as BlankPosition] = newRatio[key as BlankPosition] / total;
-			});
-		}
-		config.blankRatio = newRatio;
+		config.blankRatio = { ...config.blankRatio, [pos]: value / 100 };
 	}
+	const ratioTotal = $derived(
+		(config.blankRatio.first ?? 0) + (config.blankRatio.second ?? 0) + (config.blankRatio.result ?? 0)
+	);
+	function share(pos: BlankPosition): number {
+		if (ratioTotal <= 0) return pos === 'result' ? 100 : 0;
+		return Math.round(((config.blankRatio[pos] ?? 0) / ratioTotal) * 100);
+	}
+
+	const rangeHints = $derived.by(() => {
+		if (config.problemMode === 'remainder')
+			return [`被除数在范围内；除数 ${REMAINDER_DIVISOR_MIN}～${REMAINDER_DIVISOR_MAX}；余数小于除数`];
+		if (config.problemMode === 'chain')
+			return ['按「先乘除、后加减」计算', '每一步的中间结果和答案都在 0～最大值 之间，除法都能整除'];
+		return config.operations.map((op) => RANGE_RULE_TEXT[op]);
+	});
 </script>
 
 <div class="config-panel">
@@ -75,7 +98,7 @@
 	<div class="config-section">
 		<label>
 			{t.gradePreset}
-			<select bind:value={config.gradePreset} onchange={handlePresetChange}>
+			<select bind:value={config.gradePreset} onchange={handlePresetChange} data-testid="preset">
 				{#each Object.entries(GRADE_PRESETS) as [key, preset]}
 					<option value={key}>{preset.label}</option>
 				{/each}
@@ -86,7 +109,7 @@
 	<div class="config-section">
 		<label>
 			{t.problemMode}
-			<select bind:value={config.problemMode}>
+			<select bind:value={config.problemMode} data-testid="mode">
 				<option value="normal">{t.normalMode}</option>
 				<option value="makeTarget">{t.makeTargetMode}</option>
 				<option value="chain">{t.chainMode}</option>
@@ -113,7 +136,7 @@
 		<div class="config-section">
 			<label>
 				{t.chainLength}
-				<select bind:value={config.chainLength}>
+				<select bind:value={config.chainLength} data-testid="chain-length">
 					<option value={3}>{t.chainLength3}</option>
 					<option value={4}>{t.chainLength4}</option>
 				</select>
@@ -134,23 +157,26 @@
 		</div>
 	{/if}
 
-	{#if config.problemMode !== 'compare'}
 	<div class="config-section">
-		<label>
-			{t.exerciseType}
-			<select bind:value={config.isVertical} onchange={handleVerticalChange}>
-				<option value={false}>{t.horizontal}</option>
-				<option value={true}>{t.vertical}</option>
-			</select>
-		</label>
+		{#if verticalSupported}
+			<label>
+				{t.exerciseType}
+				<select bind:value={config.isVertical} data-testid="vertical">
+					<option value={false}>{t.horizontal}</option>
+					<option value={true}>{t.vertical}</option>
+				</select>
+			</label>
+		{:else}
+			<span class="label">{t.exerciseType}</span>
+			<p class="hint">该模式只支持横式</p>
+		{/if}
 	</div>
-{/if}
 
-	{#if !config.isVertical}
+	{#if !layout.vertical}
 		<div class="config-section">
 			<label>
 				{t.columns}
-				<select bind:value={config.columns}>
+				<select bind:value={config.columns} data-testid="columns">
 					<option value={2}>{t.columns2}</option>
 					<option value={3}>{t.columns3}</option>
 				</select>
@@ -158,98 +184,130 @@
 		</div>
 	{/if}
 
-	{#if config.problemMode === 'normal' || config.problemMode === 'chain' || config.problemMode === 'compare'}
+	{#if showOps}
 		<div class="config-section">
 			<span class="label">{t.operations}</span>
-			<div class="checkbox-group">
+			<div class="checkbox-group" class:invalid={errorsFor('operations').length > 0}>
 				{#each Object.entries(OP_NAMES) as [op, name]}
 					<label class="checkbox-label">
 						<input
 							type="checkbox"
+							data-testid="op-{op}"
 							checked={config.operations.includes(op as Operation)}
-							onchange={() => toggleOperation(op as Operation)}
+							onchange={(e) => toggleOperation(op as Operation, (e.target as HTMLInputElement).checked)}
 						/>
 						{name}
 					</label>
 				{/each}
 			</div>
+			{#each errorsFor('operations') as msg}<p class="error" role="alert">{msg}</p>{/each}
+			{#if hasMulDiv}
+				<label class="checkbox-label table-opt">
+					<input type="checkbox" bind:checked={config.tableMulDiv} data-testid="table-muldiv" />
+					乘除只出表内（因数、除数和商不超过 9）
+				</label>
+			{/if}
 		</div>
+	{/if}
 
+	{#if showRange}
 		<div class="config-section">
-			<span class="label">{t.range}</span>
+			<span class="label">{config.problemMode === 'remainder' ? '被除数范围' : t.range}</span>
 			<div class="range-inputs">
 				<label>
 					{t.rangeMin}
-					<input type="number" bind:value={config.range.min} min="0" max="999" />
+					<input
+						type="number"
+						data-testid="range-min"
+						bind:value={config.range.min}
+						min="0"
+						max="9999"
+						step="1"
+						class:invalid={errorsFor('rangeMin', 'range').length > 0}
+					/>
 				</label>
 				<label>
 					{t.rangeMax}
-					<input type="number" bind:value={config.range.max} min="1" max="9999" />
+					<input
+						type="number"
+						data-testid="range-max"
+						bind:value={config.range.max}
+						min="1"
+						max="9999"
+						step="1"
+						class:invalid={errorsFor('rangeMax', 'range').length > 0}
+					/>
 				</label>
 			</div>
+			{#each errorsFor('rangeMin', 'rangeMax', 'range') as msg}<p class="error" role="alert">{msg}</p>{/each}
+			<ul class="hint-list">
+				{#each rangeHints as h}<li>{h}</li>{/each}
+			</ul>
 		</div>
 	{/if}
 
 	{#if config.problemMode === 'normal'}
 		<div class="config-section">
 			<span class="label">{t.blankPosition}</span>
-		<div class="ratio-inputs">
-			<label>
-				{t.blankFirst}
-				<input
-					type="range"
-					min="0"
-					max="100"
-					value={Math.round(config.blankRatio.first * 100)}
-					oninput={(e) => updateBlankRatio('first', Number((e.target as HTMLInputElement).value))}
-				/>
-				<span>{Math.round(config.blankRatio.first * 100)}%</span>
-			</label>
-			<label>
-				{t.blankSecond}
-				<input
-					type="range"
-					min="0"
-					max="100"
-					value={Math.round(config.blankRatio.second * 100)}
-					oninput={(e) => updateBlankRatio('second', Number((e.target as HTMLInputElement).value))}
-				/>
-				<span>{Math.round(config.blankRatio.second * 100)}%</span>
-			</label>
-			<label>
-				{t.blankResult}
-				<input
-					type="range"
-					min="0"
-					max="100"
-					value={Math.round(config.blankRatio.result * 100)}
-					oninput={(e) => updateBlankRatio('result', Number((e.target as HTMLInputElement).value))}
-				/>
-				<span>{Math.round(config.blankRatio.result * 100)}%</span>
-			</label>
+			<div class="ratio-inputs">
+				{#each [['first', t.blankFirst], ['second', t.blankSecond], ['result', t.blankResult]] as [pos, name]}
+					<label>
+						{name}
+						<input
+							type="range"
+							min="0"
+							max="100"
+							value={Math.round((config.blankRatio[pos as BlankPosition] ?? 0) * 100)}
+							oninput={(e) => updateBlankRatio(pos as BlankPosition, Number((e.target as HTMLInputElement).value))}
+						/>
+						<span>{share(pos as BlankPosition)}%</span>
+					</label>
+				{/each}
+			</div>
+			<p class="hint">三个滑块互不影响，右侧是实际占比{ratioTotal <= 0 ? '（全为 0 时只留空结果）' : ''}</p>
 		</div>
-	</div>
 	{/if}
 
 	<div class="config-section">
 		<label>
 			{t.totalCount}
-			<input type="number" bind:value={config.totalCount} min="1" max="200" />
+			<input
+				type="number"
+				data-testid="total-count"
+				bind:value={config.totalCount}
+				min="1"
+				max={TOTAL_COUNT_LIMIT}
+				step="1"
+				class:invalid={errorsFor('totalCount').length > 0}
+			/>
 		</label>
+		{#each errorsFor('totalCount') as msg}<p class="error" role="alert">{msg}</p>{/each}
 	</div>
 
 	<div class="config-section">
 		<label>
 			{t.countPerPage}
-			<input type="number" bind:value={config.countPerPage} min="1" max="100" />
+			<input
+				type="number"
+				data-testid="per-page"
+				bind:value={config.countPerPage}
+				min="1"
+				max={layout.maxPerPage}
+				step="1"
+				class:invalid={errorsFor('countPerPage').length > 0}
+			/>
 		</label>
+		{#each errorsFor('countPerPage') as msg}<p class="error" role="alert">{msg}</p>{/each}
+		<p class="hint">当前版式一页 A4 最多 {layout.maxPerPage} 道</p>
+		{#if layoutNote}<p class="note" data-testid="layout-note">{layoutNote}</p>{/if}
 	</div>
 
 	<div class="config-section">
 		<label>
 			{t.customTitle}
-			<input type="text" bind:value={config.customTitle} placeholder="数学练习" />
+			<input type="text" bind:value={config.customTitle} placeholder={autoTitle} maxlength="30" />
 		</label>
+		<p class="hint">留空则按设置自动生成：{autoTitle}</p>
 	</div>
 
 	<div class="config-section">
@@ -268,7 +326,7 @@
 
 	<div class="config-section">
 		<label class="checkbox-label">
-			<input type="checkbox" bind:checked={config.showAnswerPage} />
+			<input type="checkbox" bind:checked={config.showAnswerPage} data-testid="answer-page" />
 			{t.showAnswerPage}
 		</label>
 	</div>
@@ -277,6 +335,8 @@
 		<button
 			class="btn primary"
 			onclick={onGenerate}
+			disabled={!canPrint}
+			data-testid="generate"
 			use:track={{
 				type: 'generation',
 				data: { operations: config.operations, gradePreset: config.gradePreset }
@@ -284,15 +344,22 @@
 		>
 			{zh.buttons.generate}
 		</button>
-		<button class="btn secondary" onclick={onPrint} use:track={{ type: 'print' }}>
+		<button class="btn secondary" onclick={onPrint} disabled={!canPrint} data-testid="print" use:track={{ type: 'print' }}>
 			{zh.buttons.print}
 		</button>
 		{#if onExportPdf}
-			<button class="btn pdf" onclick={onExportPdf} disabled={isExportingPdf} use:track={{ type: 'pdf' }}>
+			<button
+				class="btn pdf"
+				onclick={onExportPdf}
+				disabled={isExportingPdf || !canPrint}
+				data-testid="export-pdf"
+				use:track={{ type: 'pdf' }}
+			>
 				{isExportingPdf ? '导出中...' : zh.buttons.exportPdf}
 			</button>
 		{/if}
 	</div>
+	{#if !canPrint}<p class="error center">请先修正上面标红的设置</p>{/if}
 </div>
 
 <style>
@@ -343,6 +410,7 @@
 		border-radius: 4px;
 		font-size: 1rem;
 		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.checkbox-group {
@@ -385,6 +453,40 @@
 		align-items: center;
 		gap: 0.5rem;
 		font-size: 0.75rem;
+	}
+
+	.error {
+		color: #e03131;
+		font-size: 0.8rem;
+		margin: 0.35rem 0 0;
+	}
+	.error.center {
+		text-align: center;
+	}
+	.hint,
+	.note {
+		color: #888;
+		font-size: 0.75rem;
+		margin: 0.35rem 0 0;
+	}
+	.note {
+		color: #e8590c;
+	}
+	.hint-list {
+		margin: 0.4rem 0 0;
+		padding-left: 1.1rem;
+		color: #888;
+		font-size: 0.75rem;
+	}
+	input.invalid,
+	.checkbox-group.invalid {
+		outline: 2px solid #ff8787;
+		outline-offset: 1px;
+		border-radius: 4px;
+	}
+	.table-opt {
+		margin-top: 0.5rem;
+		font-size: 0.8rem;
 	}
 
 	.ratio-inputs input[type='range'] {

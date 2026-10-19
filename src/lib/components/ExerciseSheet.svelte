@@ -1,18 +1,20 @@
 <script lang="ts">
-	import type { Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem } from '$lib/types';
+	import type { AnyProblem, Problem } from '$lib/types';
 	import { OP_SYMBOLS } from '$lib/types';
 	import { zh } from '$lib/i18n/zh';
-	import { THEMES, getThemeById } from '$lib/config/themes';
-
-	type AnyProblem = Problem | MakeTargetProblem | ChainProblem | CompareProblem | RemainderProblem;
+	import { getThemeById } from '$lib/config/themes';
+	import { isChain, isCompare, isMakeTarget, isRemainder, exprText, REMAINDER_SEP } from '$lib/format';
+	import { fitText } from '$lib/actions/fitText';
 
 	interface Props {
 		problems: AnyProblem[];
-		countPerPage: number;
+		/** 每页题数（已按版式上限裁剪） */
+		perPage: number;
 		showAnswers: boolean;
-		isVertical: boolean;
-		columns?: 2 | 3;
-		customTitle?: string;
+		vertical: boolean;
+		columns: number;
+		title: string;
+		subtitle?: string;
 		studentName?: string;
 		showDate?: boolean;
 		theme?: string;
@@ -20,160 +22,115 @@
 
 	let {
 		problems,
-		countPerPage,
+		perPage,
 		showAnswers,
-		isVertical,
-		columns = 2,
-		customTitle = '',
+		vertical,
+		columns,
+		title,
+		subtitle = '',
 		studentName = '',
 		showDate = true,
 		theme = 'default'
 	}: Props = $props();
 
+	const t = zh.print;
 	const currentTheme = $derived(getThemeById(theme));
 
 	function formatDate(): string {
 		const now = new Date();
-		const year = now.getFullYear();
-		const month = now.getMonth() + 1;
-		const day = now.getDate();
-		return `${year}年${month}月${day}日`;
+		return `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`;
 	}
 
-	const t = zh.print;
-
-	const pages = $derived(() => {
+	const pages = $derived.by(() => {
+		const size = Math.max(1, perPage);
 		const result: AnyProblem[][] = [];
-		const perPage = countPerPage > 0 ? countPerPage : 20;
-		for (let i = 0; i < problems.length; i += perPage) {
-			result.push(problems.slice(i, i + perPage));
-		}
+		for (let i = 0; i < problems.length; i += size) result.push(problems.slice(i, i + size));
 		return result;
 	});
 
-	function isMakeTargetProblem(p: AnyProblem): p is MakeTargetProblem {
-		return 'type' in p && p.type === 'makeTarget';
+	/** 每页固定行数：整页题目均匀铺满 A4，最后一页行高与前面一致 */
+	const rows = $derived(Math.max(1, Math.ceil(Math.max(1, perPage) / columns)));
+
+	type Token = { k: 'num' | 'op' | 'blank' | 'ans' | 'sep' | 'cmp'; v: string };
+
+	const num = (v: number | string): Token => ({ k: 'num', v: String(v) });
+	const op = (v: string): Token => ({ k: 'op', v });
+
+	function slot(v: number | string, isBlank: boolean): Token {
+		if (!isBlank) return num(v);
+		return showAnswers ? { k: 'ans', v: `(${v})` } : { k: 'blank', v: '(\u00a0\u00a0\u00a0\u00a0)' };
 	}
 
-	function isChainProblem(p: AnyProblem): p is ChainProblem {
-		return 'type' in p && p.type === 'chain';
-	}
-
-	function isCompareProblem(p: AnyProblem): p is CompareProblem {
-		return 'type' in p && p.type === 'compare';
-	}
-
-	function isRemainderProblem(p: AnyProblem): p is RemainderProblem {
-		return 'type' in p && p.type === 'remainder';
-	}
-
-	function getCompareDisplay(p: CompareProblem, showAnswer: boolean): { left: string; symbol: string; right: string } {
-		const left = `${p.left.a} ${OP_SYMBOLS[p.left.op]} ${p.left.b}`;
-		const right = `${p.right.a} ${OP_SYMBOLS[p.right.op]} ${p.right.b}`;
-		const symbol = showAnswer ? p.answer : '○';
-		return { left, symbol, right };
-	}
-
-	function getMakeTargetParts(
-		p: MakeTargetProblem,
-		showAnswer: boolean
-	): { first: string; op: string; second: string; result: string } {
-		const blank = '(\u00a0\u00a0\u00a0\u00a0)';
-		const answerDisplay = showAnswer ? `(${p.answer})` : blank;
-
-		if (p.blankFirst) {
-			return { first: answerDisplay, op: '+', second: String(p.a), result: String(p.target) };
-		} else {
-			return { first: String(p.a), op: '+', second: answerDisplay, result: String(p.target) };
+	function tokens(p: AnyProblem): Token[] {
+		if (isMakeTarget(p)) {
+			return [slot(p.blankFirst ? p.answer : p.a, p.blankFirst), op('+'), slot(p.blankFirst ? p.a : p.answer, !p.blankFirst), op('='), num(p.target)];
 		}
-	}
-
-	function getProblemParts(
-		p: Problem,
-		showAnswer: boolean
-	): { first: string; op: string; second: string; result: string } {
-		const op = OP_SYMBOLS[p.op];
-		const blank = '(\u00a0\u00a0\u00a0\u00a0)';
-
-		switch (p.blank) {
-			case 'first':
-				return { first: showAnswer ? `(${p.a})` : blank, op, second: String(p.b), result: String(p.result) };
-			case 'second':
-				return { first: String(p.a), op, second: showAnswer ? `(${p.b})` : blank, result: String(p.result) };
-			case 'result':
-				return { first: String(p.a), op, second: String(p.b), result: showAnswer ? `(${p.result})` : blank };
+		if (isChain(p)) {
+			const out: Token[] = [];
+			p.numbers.forEach((n, i) => {
+				out.push(slot(n, p.blank === i));
+				if (i < p.ops.length) out.push(op(OP_SYMBOLS[p.ops[i]]));
+			});
+			out.push(op('='), slot(p.result, p.blank === 'result'));
+			return out;
 		}
-	}
-
-	function padNumber(n: number | string, len: number): string {
-		return String(n).padStart(len, ' ');
-	}
-
-	function getChainDisplay(p: ChainProblem, showAnswer: boolean): string {
-		const blank = '(\u00a0\u00a0\u00a0\u00a0)';
-		const parts: string[] = [];
-
-		for (let i = 0; i < p.numbers.length; i++) {
-			if (p.blank === i) {
-				parts.push(showAnswer ? `(${p.numbers[i]})` : blank);
-			} else {
-				parts.push(String(p.numbers[i]));
-			}
-			if (i < p.ops.length) {
-				parts.push(OP_SYMBOLS[p.ops[i]]);
-			}
+		if (isCompare(p)) {
+			return [
+				num(exprText(p.left)),
+				showAnswers ? { k: 'ans', v: p.answer } : { k: 'cmp', v: '○' },
+				num(exprText(p.right))
+			];
 		}
-
-		parts.push('=');
-		if (p.blank === 'result') {
-			parts.push(showAnswer ? `(${p.result})` : blank);
-		} else {
-			parts.push(String(p.result));
+		if (isRemainder(p)) {
+			return [
+				num(p.dividend),
+				op('÷'),
+				num(p.divisor),
+				op('='),
+				slot(p.quotient, p.blank !== 'remainder'),
+				{ k: 'sep', v: REMAINDER_SEP },
+				slot(p.remainder, p.blank !== 'quotient')
+			];
 		}
-
-		return parts.join(' ');
+		const q = p as Problem;
+		return [slot(q.a, q.blank === 'first'), op(OP_SYMBOLS[q.op]), slot(q.b, q.blank === 'second'), op('='), slot(q.result, q.blank === 'result')];
 	}
 
-	function getRemainderDisplay(p: RemainderProblem, showAnswer: boolean): {
-		dividend: string;
-		divisor: string;
-		quotient: string;
-		remainder: string;
-	} {
-		const blank = '(\u00a0\u00a0\u00a0\u00a0)';
-
-		let quotient: string;
-		let remainder: string;
-
-		if (p.blank === 'quotient') {
-			quotient = showAnswer ? `(${p.quotient})` : blank;
-			remainder = String(p.remainder);
-		} else if (p.blank === 'remainder') {
-			quotient = String(p.quotient);
-			remainder = showAnswer ? `(${p.remainder})` : blank;
-		} else {
-			// both
-			quotient = showAnswer ? `(${p.quotient})` : blank;
-			remainder = showAnswer ? `(${p.remainder})` : blank;
-		}
-
-		return {
-			dividend: String(p.dividend),
-			divisor: String(p.divisor),
-			quotient,
-			remainder
-		};
+	/** 竖式只用于普通计算和凑数（凑数转成加法） */
+	function asVertical(p: AnyProblem): Problem | null {
+		if (isMakeTarget(p))
+			return p.blankFirst
+				? { a: p.answer, b: p.a, op: 'add', result: p.target, blank: 'first' }
+				: { a: p.a, b: p.answer, op: 'add', result: p.target, blank: 'second' };
+		if ('type' in p) return null;
+		return p as Problem;
 	}
+
+	/** 竖式单元：留空时显示方框，答案页直接显示数字（不加括号，保证数位对齐） */
+	function vcell(v: number, blank: boolean): { text: string; cls: string } {
+		if (!blank) return { text: String(v), cls: '' };
+		return showAnswers ? { text: String(v), cls: 'v-ans' } : { text: '', cls: 'v-box' };
+	}
+
+	const hDigits = $derived(
+		Math.max(
+			2,
+			...problems.map((p) => (isMakeTarget(p) ? String(p.target).length : 'a' in p && !('type' in p) ? Math.max(String((p as Problem).a).length, String((p as Problem).result).length) : 2))
+		)
+	);
 </script>
 
 <div
 	class="sheet-container"
 	style="--theme-primary: {currentTheme.colors.primary}; --theme-secondary: {currentTheme.colors.secondary}; --theme-accent: {currentTheme.colors.accent}; --theme-background: {currentTheme.colors.background}; --theme-border: {currentTheme.colors.border};"
 >
-	{#each pages() as page, pageIndex}
-		<div class="page" class:answer-page={showAnswers}>
-			<div class="page-header">
-				<h1>{customTitle || t.exerciseTitle}{showAnswers ? ` - ${t.answerTitle}` : ''}</h1>
+	{#each pages as page, pageIndex}
+		<section class="page" class:answer-page={showAnswers} data-testid={showAnswers ? 'answer-page' : 'sheet-page'}>
+			<header class="page-header">
+				<h1>{title}{showAnswers ? ` - ${t.answerTitle}` : ''}</h1>
+				{#if subtitle}
+					<div class="subtitle">{subtitle}{pages.length > 1 ? ` · 第 ${pageIndex + 1}/${pages.length} 页` : ''}</div>
+				{/if}
 				{#if !showAnswers}
 					<div class="info-row">
 						<div class="info-item">
@@ -196,524 +153,369 @@
 						</div>
 					</div>
 				{/if}
-			</div>
+			</header>
 
-			{#if isVertical}
-				<div class="vertical-grid">
-					{#each page as problem, idx}
-						{#if !isMakeTargetProblem(problem) && !isChainProblem(problem) && !isCompareProblem(problem) && !isRemainderProblem(problem)}
-							{@const p = problem as Problem}
-							{@const maxLen = Math.max(
-								String(p.a).length,
-								String(p.b).length,
-								String(p.result).length
-							)}
-							<div class="vertical-problem">
-								<div class="problem-number">{pageIndex * countPerPage + idx + 1}.</div>
-								<div class="vertical-calc">
-									<div class="v-row top">
-										{#if p.blank !== 'first'}
-											{padNumber(p.a, maxLen)}
-										{:else if showAnswers}
-											<span class="v-answer">({padNumber(p.a, maxLen)})</span>
-										{:else}
-											<span class="v-blank">{' '.repeat(maxLen)}</span>
-										{/if}
-									</div>
-									<div class="v-row middle">
-										<span class="v-op">{OP_SYMBOLS[p.op]}</span>
-										{#if p.blank !== 'second'}
-											{padNumber(p.b, maxLen)}
-										{:else if showAnswers}
-											<span class="v-answer">({padNumber(p.b, maxLen)})</span>
-										{:else}
-											<span class="v-blank">{' '.repeat(maxLen)}</span>
-										{/if}
-									</div>
-									<div class="v-line"></div>
-									<div class="v-row bottom">
-										{#if p.blank !== 'result'}
-											{padNumber(p.result, maxLen)}
-										{:else if showAnswers}
-											<span class="v-answer">({padNumber(p.result, maxLen)})</span>
-										{:else}
-											<span class="v-blank">{' '.repeat(maxLen)}</span>
-										{/if}
+			<div
+				class="grid"
+				class:vertical
+				class:cols-2={!vertical && columns === 2}
+				class:cols-3={!vertical && columns === 3}
+				style="--cols: {columns}; --rows: {rows}; --digits: {hDigits};"
+			>
+				{#each page as problem, idx}
+					{@const n = pageIndex * perPage + idx + 1}
+					{@const vp = vertical ? asVertical(problem) : null}
+					{#if vp}
+						{@const len = Math.max(String(vp.a).length, String(vp.b).length, String(vp.result).length)}
+						<div class="cell v-cell" data-testid="problem">
+							<span class="problem-number">{n}.</span>
+							{#if vp.op === 'div'}
+								{@const dd = vcell(vp.a, vp.blank === 'first')}
+								{@const dv = vcell(vp.b, vp.blank === 'second')}
+								{@const qq = vcell(vp.result, vp.blank === 'result')}
+								<div class="ldiv" style="--len: {len}">
+									<div class="ld-q"><span class={qq.cls}>{qq.text}</span></div>
+									<div class="ld-body">
+										<span class="ld-divisor"><span class={dv.cls}>{dv.text}</span></span>
+										<span class="ld-dividend"><span class={dd.cls}>{dd.text}</span></span>
 									</div>
 								</div>
-							</div>
-						{/if}
-					{/each}
-				</div>
-			{:else}
-				<div class="horizontal-grid" class:cols-2={columns === 2} class:cols-3={columns === 3}>
-					{#each page as problem, idx}
-						{#if isCompareProblem(problem)}
-							{@const compare = getCompareDisplay(problem, showAnswers)}
-							<div class="problem compare-problem" class:problem-large={columns === 2}>
-								<span class="problem-number">{String(pageIndex * countPerPage + idx + 1).padStart(2, ' ')}.</span>
-								<span class="compare-left">{compare.left}</span>
-								<span class="compare-symbol" class:compare-answer={showAnswers}>{compare.symbol}</span>
-								<span class="compare-right">{compare.right}</span>
-							</div>
-						{:else if isChainProblem(problem)}
-							<div class="problem chain-problem" class:problem-large={columns === 2}>
-								<span class="problem-number">{String(pageIndex * countPerPage + idx + 1).padStart(2, ' ')}.</span>
-								<span class="chain-expr">{getChainDisplay(problem, showAnswers)}</span>
-							</div>
-						{:else if isRemainderProblem(problem)}
-							{@const remainder = getRemainderDisplay(problem, showAnswers)}
-							<div class="problem remainder-problem" class:problem-large={columns === 2}>
-								<span class="problem-number">{String(pageIndex * countPerPage + idx + 1).padStart(2, ' ')}.</span>
-								<span class="remainder-dividend">{remainder.dividend}</span>
-								<span class="remainder-op">÷</span>
-								<span class="remainder-divisor">{remainder.divisor}</span>
-								<span class="remainder-eq">=</span>
-								<span class="remainder-quotient">{remainder.quotient}</span>
-								<span class="remainder-sep">...</span>
-								<span class="remainder-remainder">{remainder.remainder}</span>
-							</div>
-						{:else}
-							{@const parts = isMakeTargetProblem(problem)
-								? getMakeTargetParts(problem, showAnswers)
-								: getProblemParts(problem, showAnswers)}
-							<div class="problem" class:problem-large={columns === 2}>
-								<span class="problem-number">{String(pageIndex * countPerPage + idx + 1).padStart(2, ' ')}.</span>
-								<span class="part first">{parts.first}</span>
-								<span class="part op">{parts.op}</span>
-								<span class="part second">{parts.second}</span>
-								<span class="part eq">=</span>
-								<span class="part result">{parts.result}</span>
-							</div>
-						{/if}
-					{/each}
-				</div>
-			{/if}
-		</div>
+							{:else}
+								{@const top = vcell(vp.a, vp.blank === 'first')}
+								{@const mid = vcell(vp.b, vp.blank === 'second')}
+								{@const bot = vcell(vp.result, vp.blank === 'result')}
+								<div class="vcalc" style="--len: {len}">
+									<div class="v-row"><span class="v-num {top.cls}">{top.text}</span></div>
+									<div class="v-row"><span class="v-op">{OP_SYMBOLS[vp.op]}</span><span class="v-num {mid.cls}">{mid.text}</span></div>
+									<div class="v-line"></div>
+									<div class="v-row"><span class="v-num {bot.cls}">{bot.text}</span></div>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						{@const toks = tokens(problem)}
+						{@const aligned = !isChain(problem) && !isCompare(problem) && !isRemainder(problem)}
+						<div class="cell h-cell" data-testid="problem">
+							<span class="line" class:aligned class:long={isChain(problem) || isRemainder(problem)} use:fitText={toks.map((x) => x.v).join('|') + columns}>
+								<span class="problem-number">{n}.</span>{#each toks as tk}<span class="tk tk-{tk.k}">{tk.v}</span>{/each}
+							</span>
+						</div>
+					{/if}
+				{/each}
+			</div>
+		</section>
 	{/each}
 </div>
 
 <style>
 	.sheet-container {
-		background: white;
-		font-family: 'Comic Sans MS', 'PingFang SC', 'Microsoft YaHei', cursive, sans-serif;
+		font-family: 'Comic Sans MS', 'Chalkboard SE', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', cursive, sans-serif;
+		zoom: var(--sheet-zoom, 1);
 	}
 
+	/* 一页 = 一张 A4（屏幕预览、浏览器打印、PDF 导出完全一致） */
 	.page {
-		padding: 2rem 2.5rem;
-		min-height: 100vh;
+		width: 210mm;
+		height: 297mm;
+		padding: 11mm 13mm 10mm;
 		box-sizing: border-box;
-		background: linear-gradient(180deg, var(--theme-background) 0%, #ffffff 100%);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		background: linear-gradient(180deg, var(--theme-background) 0%, #ffffff 60%);
+		margin: 0 auto 16px;
+		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+		break-inside: avoid;
+		page-break-inside: avoid;
+		position: relative;
 	}
 
 	.page-header {
-		margin-bottom: 2rem;
+		flex: 0 0 auto;
+		height: 30mm;
+		box-sizing: border-box;
 		text-align: center;
+		overflow: hidden;
 	}
 
 	.page-header h1 {
-		font-size: 2rem;
+		font-size: 26px;
+		line-height: 1.25;
 		font-weight: 700;
-		margin: 0 0 1rem;
+		margin: 0 0 1.5mm;
 		color: var(--theme-primary);
 		text-shadow: 2px 2px 0 var(--theme-secondary);
-		letter-spacing: 0.15em;
+		letter-spacing: 0.08em;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.page-header h1::before {
 		content: '🌟 ';
 	}
-
 	.page-header h1::after {
 		content: ' 🌟';
+	}
+
+	.subtitle {
+		font-size: 13px;
+		color: #8a7a6a;
+		margin-bottom: 2mm;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.info-row {
 		display: flex;
 		justify-content: center;
 		gap: 2.5rem;
-		font-size: 1.1rem;
+		font-size: 16px;
 		color: #5a4a3a;
 	}
-
 	.info-item {
 		display: flex;
 		align-items: baseline;
 		gap: 0.5rem;
 	}
-
 	.info-label {
 		color: #ff9f43;
 		font-weight: 600;
 	}
-
 	.info-line {
 		display: inline-block;
 		width: 5rem;
 		border-bottom: 2px dashed #ffc078;
 	}
-
 	.info-line.short {
 		width: 3rem;
 	}
-
 	.info-value {
 		color: #5c7cfa;
 		font-weight: 600;
 	}
 
-	/* 横式网格 */
-	.horizontal-grid {
+	/* 题目网格：固定行数，均匀铺满整页剩余高度 */
+	.grid {
+		flex: 1 1 auto;
+		min-height: 0;
 		display: grid;
+		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+		grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+		column-gap: 6mm;
+		border-top: 1px dashed #f1d9b5;
+		padding-top: 2mm;
 	}
 
-	.horizontal-grid.cols-2 {
-		grid-template-columns: repeat(2, 1fr);
-		gap: 1.5rem 4rem;
+	.cell {
+		min-width: 0;
+		min-height: 0;
+		overflow: hidden;
+		break-inside: avoid;
+		page-break-inside: avoid;
 	}
 
-	.horizontal-grid.cols-3 {
-		grid-template-columns: repeat(3, 1fr);
-		gap: 1rem 2rem;
-	}
-
-	.problem {
+	.h-cell {
 		display: flex;
-		align-items: baseline;
-		font-size: 1.3rem;
-		font-family: 'Comic Sans MS', 'PingFang SC', cursive, sans-serif;
-		line-height: 1.8;
+		align-items: center;
+		padding: 0 1mm;
+	}
+
+	.line {
+		display: inline-block;
 		white-space: nowrap;
+		font-size: 21px;
+		line-height: 1.3;
 		color: #4a4a4a;
-		padding: 0.3rem 0.5rem;
-		border-radius: 8px;
-		transition: background 0.2s;
+		font-variant-numeric: tabular-nums;
 	}
-
-	.problem:hover {
-		background: #fff3cd;
+	.cols-2 .line {
+		font-size: 26px;
 	}
-
-	.problem.problem-large {
-		font-size: 1.6rem;
-		line-height: 2.2;
+	.cols-3 .line.long {
+		font-size: 18px;
+	}
+	.cols-2 .line.long {
+		font-size: 23px;
 	}
 
 	.problem-number {
+		display: inline-block;
 		color: #ff6b6b;
-		min-width: 2em;
+		min-width: 2.2em;
 		text-align: right;
-		margin-right: 0.5em;
+		margin-right: 0.35em;
 		font-weight: 700;
-		font-size: 1em;
+		font-size: 0.85em;
 	}
 
-	.part {
+	.tk {
+		display: inline-block;
 		text-align: center;
 	}
-
-	.part.first,
-	.part.second {
-		min-width: 2em;
-		text-align: right;
+	.tk-num {
 		color: #5c7cfa;
 		font-weight: 600;
 	}
-
-	.part.result {
-		min-width: 2.5em;
-		text-align: center;
+	.tk-op {
+		color: #ff922b;
+		font-weight: 700;
+		margin: 0 0.3em;
+	}
+	.tk-blank {
 		color: #51cf66;
 		font-weight: 600;
 	}
-
-	.problem-large .part.first,
-	.problem-large .part.second {
-		min-width: 2.5em;
-	}
-
-	.problem-large .part.result {
-		min-width: 3em;
-	}
-
-	.part.op {
-		min-width: 1.5em;
-		text-align: center;
-		color: #ff922b;
+	.tk-ans {
+		color: #e8590c;
 		font-weight: 700;
 	}
-
-	.part.eq {
-		min-width: 1.5em;
-		text-align: center;
-		color: #ff922b;
-		font-weight: 700;
-	}
-
-	.chain-problem .chain-expr {
-		color: #5c7cfa;
-		font-weight: 600;
-	}
-
-	/* 比较大小题目 */
-	.compare-problem .compare-left,
-	.compare-problem .compare-right {
-		color: #5c7cfa;
-		font-weight: 600;
-	}
-
-	.compare-symbol {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 2em;
-		margin: 0 0.5em;
-		font-size: 1.2em;
-		color: #ff922b;
-		font-weight: 700;
-	}
-
-	.compare-symbol.compare-answer {
-		color: #51cf66;
-	}
-
-	/* 有余数除法题目 */
-	.remainder-problem .remainder-dividend,
-	.remainder-problem .remainder-divisor,
-	.remainder-problem .remainder-quotient,
-	.remainder-problem .remainder-remainder {
-		color: #5c7cfa;
-		font-weight: 600;
-	}
-
-	.remainder-problem .remainder-op,
-	.remainder-problem .remainder-eq {
-		color: #ff922b;
-		font-weight: 700;
-	}
-
-	.remainder-problem .remainder-sep {
+	.tk-sep {
 		color: #999;
-		font-weight: 600;
+		margin: 0 0.35em;
+		letter-spacing: -0.05em;
+	}
+	.tk-cmp {
+		color: #ff922b;
+		font-weight: 700;
+		font-size: 1.15em;
+		margin: 0 0.5em;
+	}
+	.tk-ans:not(:first-child):not(:last-child) {
+		margin: 0 0.25em;
+	}
+	/* 普通计算：数字列对齐 */
+	.aligned .tk-num,
+	.aligned .tk-blank,
+	.aligned .tk-ans {
+		min-width: calc(var(--digits) * 0.62em + 0.5em);
+	}
+	.aligned .tk-num {
+		text-align: right;
 	}
 
-	/* 竖式网格 */
-	.vertical-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 2rem;
-	}
-
-	.vertical-problem {
+	/* 竖式 */
+	.v-cell {
 		display: flex;
-		gap: 0.5rem;
-		font-family: 'Courier New', monospace;
-		font-size: 1.25rem;
+		align-items: flex-start;
+		gap: 2mm;
+		padding-top: 3mm;
+		font-family: 'Courier New', 'DejaVu Sans Mono', monospace;
+		font-size: 24px;
 	}
-
-	.vertical-calc {
+	.v-cell .problem-number {
+		font-family: 'Comic Sans MS', 'PingFang SC', cursive, sans-serif;
+		font-size: 16px;
+		min-width: 1.8em;
+		margin-top: 0.2em;
+	}
+	.vcalc {
 		display: flex;
 		flex-direction: column;
-		align-items: flex-end;
+		align-items: stretch;
+		width: calc((var(--len) + 1.6) * 1ch);
+		color: #4a4a4a;
+		font-weight: 600;
 	}
-
 	.v-row {
-		white-space: pre;
-		min-width: 3rem;
-		text-align: right;
-	}
-
-	.v-row.middle {
 		display: flex;
-		gap: 0.5rem;
+		justify-content: flex-end;
+		align-items: center;
+		height: 1.45em;
 	}
-
 	.v-op {
 		margin-right: auto;
+		color: #ff922b;
 	}
-
+	.v-num {
+		display: inline-block;
+		min-width: calc(var(--len) * 1ch);
+		text-align: right;
+		letter-spacing: 0.05em;
+	}
 	.v-line {
-		width: 100%;
 		height: 2px;
 		background: #333;
-		margin: 0.25rem 0;
+		margin: 0.15em 0 0.25em;
+	}
+	.v-box {
+		height: 1.2em;
+		border: 1.5px dashed #b0b0b0;
+		border-radius: 4px;
+		box-sizing: border-box;
+	}
+	.v-ans {
+		color: #e8590c;
 	}
 
-	.v-blank {
+	/* 除法竖式（长除法） */
+	.ldiv {
+		display: inline-flex;
+		flex-direction: column;
+		font-weight: 600;
+		color: #4a4a4a;
+	}
+	.ld-q {
+		align-self: flex-end;
+		min-width: calc(var(--len) * 1ch + 0.6em);
+		text-align: right;
+		height: 1.45em;
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		padding-right: 0.3em;
+	}
+	.ld-q > span {
 		display: inline-block;
-		border-bottom: 2px solid #333;
-		min-width: 2rem;
+		min-width: calc(var(--len) * 1ch);
+		text-align: right;
+	}
+	.ld-body {
+		display: flex;
+		align-items: center;
+	}
+	.ld-divisor {
+		padding-right: 0.2em;
+	}
+	.ld-divisor > span,
+	.ld-dividend > span {
+		display: inline-block;
+		min-width: calc(var(--len) * 1ch);
+		text-align: right;
+	}
+	.ld-dividend {
+		border-top: 2px solid #333;
+		border-left: 2px solid #333;
+		border-top-left-radius: 0.6em 1em;
+		padding: 0.15em 0.3em 0.1em 0.5em;
 	}
 
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		.page {
-			padding: 1.5rem 1.25rem;
-		}
-
-		.page-header {
-			margin-bottom: 1.5rem;
-		}
-
-		.page-header h1 {
-			font-size: 1.5rem;
-			letter-spacing: 0.1em;
-		}
-
-		.info-row {
-			gap: 1.5rem;
-			font-size: 0.95rem;
-			flex-wrap: wrap;
-		}
-
-		.info-line {
-			width: 4rem;
-		}
-
-		.horizontal-grid.cols-2 {
-			grid-template-columns: 1fr;
-			gap: 1rem 2rem;
-		}
-
-		.horizontal-grid.cols-3 {
-			grid-template-columns: repeat(2, 1fr);
-			gap: 0.8rem 1.5rem;
-		}
-
-		.problem {
-			font-size: 1.1rem;
-			line-height: 1.6;
-			padding: 0.25rem 0.4rem;
-		}
-
-		.problem.problem-large {
-			font-size: 1.3rem;
-			line-height: 1.8;
-		}
-
-		.vertical-grid {
-			grid-template-columns: 1fr;
-			gap: 1.5rem;
-		}
-
-		.vertical-problem {
-			font-size: 1.1rem;
-		}
-
-		.compare-symbol {
-			margin: 0 0.3em;
-			font-size: 1.1em;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.page {
-			padding: 1rem 0.75rem;
-		}
-
-		.page-header h1 {
-			font-size: 1.3rem;
-			margin-bottom: 0.75rem;
-		}
-
-		.info-row {
-			gap: 1rem;
-			font-size: 0.85rem;
-			flex-direction: column;
-			align-items: center;
-		}
-
-		.info-line {
-			width: 3rem;
-		}
-
-		.horizontal-grid.cols-2 {
-			gap: 0.75rem 1.5rem;
-		}
-
-		.horizontal-grid.cols-3 {
-			grid-template-columns: 1fr;
-			gap: 0.75rem;
-		}
-
-		.problem {
-			font-size: 1rem;
-			line-height: 1.5;
-			padding: 0.2rem 0.3rem;
-		}
-
-		.problem.problem-large {
-			font-size: 1.15rem;
-			line-height: 1.6;
-		}
-
-		.problem-number {
-			min-width: 1.5em;
-			margin-right: 0.3em;
-		}
-
-		.vertical-problem {
-			font-size: 1rem;
-		}
-
-		.compare-symbol {
-			margin: 0 0.2em;
-			font-size: 1em;
-		}
-	}
-
-	/* 打印样式 */
 	@page {
-		margin: 0;
 		size: A4;
+		margin: 0;
 	}
 
 	@media print {
 		.sheet-container {
-			background: transparent;
+			zoom: 1 !important;
 		}
-
-		.page {
-			page-break-after: always;
-			padding: 1.5cm;
-			min-height: 100vh;
-			width: 100vw;
-			box-sizing: border-box;
-			-webkit-print-color-adjust: exact !important;
-			print-color-adjust: exact !important;
-		}
-
-		.page:last-child {
-			page-break-after: avoid;
-		}
-
-		.answer-page {
+		/* 每页之间强制分页，但最后一页之后不再分页（避免多出一张白纸） */
+		.page + .page {
+			break-before: page;
 			page-break-before: always;
 		}
-
-		.problem:hover {
-			background: transparent !important;
+		:global(.sheet-container + .sheet-container) .page:first-child {
+			break-before: page;
+			page-break-before: always;
 		}
-
-		/* 强制恢复打印时的网格布局 */
-		.horizontal-grid.cols-2 {
-			grid-template-columns: repeat(2, 1fr) !important;
-			gap: 1.5rem 4rem !important;
-		}
-
-		.horizontal-grid.cols-3 {
-			grid-template-columns: repeat(3, 1fr) !important;
-			gap: 1rem 2rem !important;
-		}
-
-		.problem {
-			font-size: 1.3rem !important;
-			line-height: 1.8 !important;
-		}
-
-		.problem.problem-large {
-			font-size: 1.6rem !important;
-			line-height: 2.2 !important;
+		.page {
+			margin: 0 !important;
+			box-shadow: none !important;
+			break-after: auto;
+			page-break-after: auto;
+			-webkit-print-color-adjust: exact !important;
+			print-color-adjust: exact !important;
 		}
 	}
 </style>

@@ -1,35 +1,25 @@
 import type { MakeTargetProblem, MakeTargetValue } from '$lib/types';
+import type { Rng } from './random';
+import { defaultRng } from './random';
+import { fillProblems, type FillResult } from './fill';
 
-export function generateMakeTargetProblem(target: MakeTargetValue): MakeTargetProblem {
-	const a = Math.floor(Math.random() * (target - 1)) + 1;
-	const answer = target - a;
-	const blankFirst = Math.random() < 0.5;
+export function generateMakeTargetProblem(target: MakeTargetValue, rng: Rng = defaultRng): MakeTargetProblem {
+	const a = Math.floor(rng() * (target - 1)) + 1;
+	return { type: 'makeTarget', a, target, answer: target - a, blankFirst: rng() < 0.5 };
+}
 
-	return {
-		type: 'makeTarget',
-		a,
-		target,
-		answer,
-		blankFirst
-	};
+export function generateMakeTargetProblemsDetailed(
+	target: MakeTargetValue,
+	count: number,
+	rng: Rng = defaultRng
+): FillResult<MakeTargetProblem> {
+	return fillProblems(count, () => generateMakeTargetProblem(target, rng), (p) => `${p.a}-${p.blankFirst}`, rng);
 }
 
 export function generateMakeTargetProblems(
 	target: MakeTargetValue,
-	count: number
+	count: number,
+	rng: Rng = defaultRng
 ): MakeTargetProblem[] {
-	const problems: MakeTargetProblem[] = [];
-	const seen = new Set<string>();
-
-	let attempts = 0;
-	while (problems.length < count && attempts < count * 10) {
-		attempts++;
-		const problem = generateMakeTargetProblem(target);
-		const key = `${problem.a}-${problem.blankFirst}`;
-		if (seen.has(key)) continue;
-		seen.add(key);
-		problems.push(problem);
-	}
-
-	return problems;
+	return generateMakeTargetProblemsDetailed(target, count, rng).problems;
 }
