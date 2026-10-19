@@ -403,16 +403,19 @@
 	}
 
 	/*
-	 * 横式对齐：数字/填空/答案共用 digits*ch 槽宽（不含括号）；
-	 * 括号用 ::before/::after 绝对定位挂在槽外，不撑宽布局。
-	 * 运算符定宽并留足侧边距，避免挂出括号盖住 +−×÷=。
-	 * 保留 --fit-line-size 整页统一字号。
+	 * 横式对齐：数字/填空/答案共用「digits*ch 内容 + 两侧 padding」；
+	 * 括号画在 padding 里（left:0 / right:0），不再探出槽外压题号或运算符。
+	 * 所有槽同等 padding，同列「=」仍齐。保留 --fit-line-size。
 	 */
 	.aligned .tk-num,
 	.aligned .tk-blank,
 	.aligned .tk-ans {
+		/* content-box：padding 加在 width 外，三槽一致故等号仍同列 */
+		box-sizing: content-box;
 		width: calc(var(--digits) * 1ch + 0.15em);
 		min-width: calc(var(--digits) * 1ch + 0.15em);
+		padding-left: 0.7em;
+		padding-right: 0.7em;
 		margin: 0;
 		text-align: right;
 		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
@@ -424,13 +427,16 @@
 	.aligned .tk-ans {
 		text-align: center;
 	}
-	/* 括号挂在数字槽外侧，不计入布局宽度 */
+	/* 括号落在本槽左右 padding 内，不侵占题号 / 运算符 */
 	.aligned .tk-blank::before,
 	.aligned .tk-ans::before {
 		content: '(';
 		position: absolute;
-		right: 100%;
+		left: 0;
+		right: auto;
 		top: 0;
+		width: 0.7em;
+		text-align: center;
 		color: #51cf66;
 		font-weight: 600;
 		pointer-events: none;
@@ -439,8 +445,11 @@
 	.aligned .tk-ans::after {
 		content: ')';
 		position: absolute;
-		left: 100%;
+		right: 0;
+		left: auto;
 		top: 0;
+		width: 0.7em;
+		text-align: center;
 		color: #51cf66;
 		font-weight: 600;
 		pointer-events: none;
@@ -449,26 +458,22 @@
 	.aligned .tk-ans::after {
 		color: #e8590c;
 	}
-	/*
-	 * 题号右侧统一留出挂括号宽度（所有横式行一致，避免只给 blank-first
-	 * 加 margin 导致同列「=」漂移）。约 1ch 括号 + 可见间隙（≥6px）。
-	 */
 	.aligned .problem-number {
-		margin-right: 1.35em;
+		/* 括号已在槽内，题号只需常规间距 */
+		margin-right: 0.55em;
 	}
 	.aligned .tk-ans:not(:first-child):not(:last-child) {
 		margin: 0;
 	}
 	.aligned .tk-op {
-		/* ~2.65em: hanging ) / ( sit in gutter; glyph stays ≥2px clear of paren */
-		width: 2.65em;
-		min-width: 2.65em;
+		width: 1.45em;
+		min-width: 1.45em;
 		margin: 0;
 		text-align: center;
 	}
 	.aligned .tk-sep {
-		width: 2.4em;
-		min-width: 2.4em;
+		width: 1.6em;
+		min-width: 1.6em;
 		margin: 0;
 		text-align: center;
 		letter-spacing: 0;
