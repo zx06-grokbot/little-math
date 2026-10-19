@@ -165,20 +165,73 @@ test('对齐后整页字号仍统一（不破坏 --fit-line-size）', async ({ p
 });
 
 
-/** 填空括号不得与相邻运算符重叠（回归：对齐定宽过窄时括号盖住 + − × ÷ =） */
+/**
+ * 填空括号不得与相邻运算符重叠。
+ * 括号由 ::before/::after 挂在槽外，getBoundingClientRect 不含伪元素，
+ * 因此用 Range 量数字内容盒，再按 ~0.6ch 悬伸估算括号外沿，
+ * 并要求 op 字形中心不落在 blank±paren 范围内；内容盒与 op 内容盒间隙 ≥ 0.3px。
+ */
 async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, root = '[data-testid=sheet-page]') {
 	const overlaps = await page.evaluate((sel) => {
 		const bad: string[] = [];
+		const chPx = (el: HTMLElement) => {
+			const cs = getComputedStyle(el);
+			const probe = document.createElement('span');
+			probe.style.cssText = `position:absolute;visibility:hidden;font:${cs.font};font-size:${cs.fontSize};font-family:${cs.fontFamily}`;
+			probe.textContent = '0';
+			el.appendChild(probe);
+			const w = probe.getBoundingClientRect().width;
+			probe.remove();
+			return w || parseFloat(cs.fontSize) * 0.5;
+		};
+		const contentBox = (el: HTMLElement) => {
+			const r = document.createRange();
+			if (el.firstChild) {
+				r.selectNodeContents(el);
+				const rects = [...r.getClientRects()];
+				if (rects.length) {
+					return {
+						left: Math.min(...rects.map((x) => x.left)),
+						right: Math.max(...rects.map((x) => x.right)),
+						top: Math.min(...rects.map((x) => x.top)),
+						bottom: Math.max(...rects.map((x) => x.bottom))
+					};
+				}
+			}
+			const br = el.getBoundingClientRect();
+			return { left: br.left, right: br.right, top: br.top, bottom: br.bottom };
+		};
 		for (const line of document.querySelectorAll(`${sel} .line.aligned`)) {
 			const blanks = [...line.querySelectorAll<HTMLElement>('.tk-blank, .tk-ans')];
 			const ops = [...line.querySelectorAll<HTMLElement>('.tk-op')];
 			for (const b of blanks) {
 				const br = b.getBoundingClientRect();
+				const overhang = chPx(b) * 0.6;
+				const parenLeft = br.left - overhang;
+				const parenRight = br.right + overhang;
+				const bContent = contentBox(b);
 				for (const o of ops) {
 					const or = o.getBoundingClientRect();
-					const separated = or.left >= br.right - 0.5 || br.left >= or.right - 0.5;
-					if (!separated) {
-						bad.push(`${(b.textContent ?? '').trim()}∩${(o.textContent ?? '').trim()} @ ${(line.textContent ?? '').trim()}`);
+					const oContent = contentBox(o);
+					const opCenter = (oContent.left + oContent.right) / 2;
+					/* adjacent only: ignore non-neighbor ops (e.g. blank vs far =) */
+					const near =
+						Math.abs(oContent.left - bContent.right) < 40 ||
+						Math.abs(bContent.left - oContent.right) < 40;
+					if (!near) continue;
+					const gap = Math.min(
+						Math.abs(oContent.left - bContent.right),
+						Math.abs(bContent.left - oContent.right)
+					);
+					/* hanging paren may sit inside op's fixed gutter; glyph must stay clear */
+					const contentGapOk = gap >= 0.3;
+					const centerClear = opCenter < parenLeft - 0.1 || opCenter > parenRight + 0.1;
+					if (!contentGapOk || !centerClear) {
+						bad.push(
+							`${(b.textContent ?? '').trim() || '(blank)'}∩${(o.textContent ?? '').trim()} @ ${(line.textContent ?? '').trim()} ` +
+								`[gap=${gap.toFixed(2)} centerIn=${!(opCenter < parenLeft || opCenter > parenRight)} ` +
+								`parenR=${parenRight.toFixed(1)} opC=${opCenter.toFixed(1)}]`
+						);
 					}
 				}
 			}
@@ -224,12 +277,12 @@ test('横式填空：括号不盖住运算符；等号仍同列对齐', async ({
 
 	await expectNoOpBlankOverlap(page, '[data-testid=sheet-page]');
 	await expectEqualsAligned(page, '[data-testid=sheet-page]');
-	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'paren-fix-after-2col.png') });
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'align-space-after-2col.png') });
 
 	await expect(page.locator('[data-testid=answer-page]').first()).toBeVisible();
 	await expectNoOpBlankOverlap(page, '[data-testid=answer-page]');
 	await expectEqualsAligned(page, '[data-testid=answer-page]');
-	await page.locator('[data-testid=answer-page]').first().screenshot({ path: path.join(SHOTS, 'paren-fix-after-answers.png') });
+	await page.locator('[data-testid=answer-page]').first().screenshot({ path: path.join(SHOTS, 'align-space-after-answers.png') });
 });
 
 test('横式填空偏前置：第一操作数括号不盖住运算符', async ({ page }) => {
@@ -247,5 +300,5 @@ test('横式填空偏前置：第一操作数括号不盖住运算符', async ({
 	await page.waitForTimeout(400);
 	await expectNoOpBlankOverlap(page);
 	await expectEqualsAligned(page);
-	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'paren-fix-after-blank-first.png') });
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'align-space-after-blank-first.png') });
 });

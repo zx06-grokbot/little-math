@@ -58,7 +58,10 @@
 
 	function slot(v: number | string, isBlank: boolean): Token {
 		if (!isBlank) return num(v);
-		return showAnswers ? { k: 'ans', v: `(${v})` } : { k: 'blank', v: '(\u00a0\u00a0\u00a0\u00a0)' };
+		/* parentheses drawn via CSS ::before/::after so they hang outside the digit column */
+		return showAnswers
+			? { k: 'ans', v: String(v) }
+			: { k: 'blank', v: '\u00a0\u00a0\u00a0' };
 	}
 
 	function tokens(p: AnyProblem): Token[] {
@@ -400,31 +403,59 @@
 	}
 
 	/*
-	 * 横式对齐：定宽数字槽（monospace + 右齐）+ 定宽运算符，
-	 * 使同列题目的 = / 括号竖向整齐。保留 --fit-line-size 整页统一字号。
+	 * 横式对齐：数字/填空/答案共用 digits*ch 槽宽（不含括号）；
+	 * 括号用 ::before/::after 绝对定位挂在槽外，不撑宽布局。
+	 * 运算符定宽并留足侧边距，避免挂出括号盖住 +−×÷=。
+	 * 保留 --fit-line-size 整页统一字号。
 	 */
 	.aligned .tk-num,
 	.aligned .tk-blank,
 	.aligned .tk-ans {
-		/* digits + 2 for wrapping parentheses on blank/ans, e.g. (100) */
-		width: calc((var(--digits) + 2) * 1ch + 0.5em);
-		min-width: calc((var(--digits) + 2) * 1ch + 0.5em);
+		width: calc(var(--digits) * 1ch + 0.15em);
+		min-width: calc(var(--digits) * 1ch + 0.15em);
 		margin: 0;
 		text-align: right;
 		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
 		font-variant-numeric: tabular-nums;
 		font-weight: 600;
+		position: relative;
 	}
 	.aligned .tk-blank,
 	.aligned .tk-ans {
 		text-align: center;
 	}
+	/* 括号挂在数字槽外侧，不计入布局宽度 */
+	.aligned .tk-blank::before,
+	.aligned .tk-ans::before {
+		content: '(';
+		position: absolute;
+		right: 100%;
+		top: 0;
+		color: #51cf66;
+		font-weight: 600;
+		pointer-events: none;
+	}
+	.aligned .tk-blank::after,
+	.aligned .tk-ans::after {
+		content: ')';
+		position: absolute;
+		left: 100%;
+		top: 0;
+		color: #51cf66;
+		font-weight: 600;
+		pointer-events: none;
+	}
+	.aligned .tk-ans::before,
+	.aligned .tk-ans::after {
+		color: #e8590c;
+	}
 	.aligned .tk-ans:not(:first-child):not(:last-child) {
 		margin: 0;
 	}
 	.aligned .tk-op {
-		width: 1.35em;
-		min-width: 1.35em;
+		/* ~1.7em so hanging paren (~0.6ch each side) does not cover the glyph */
+		width: 1.7em;
+		min-width: 1.7em;
 		margin: 0;
 		text-align: center;
 	}
