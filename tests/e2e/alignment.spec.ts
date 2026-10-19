@@ -163,3 +163,89 @@ test('对齐后整页字号仍统一（不破坏 --fit-line-size）', async ({ p
 	});
 	expect(fonts).toHaveLength(1);
 });
+
+
+/** 填空括号不得与相邻运算符重叠（回归：对齐定宽过窄时括号盖住 + − × ÷ =） */
+async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, root = '[data-testid=sheet-page]') {
+	const overlaps = await page.evaluate((sel) => {
+		const bad: string[] = [];
+		for (const line of document.querySelectorAll(`${sel} .line.aligned`)) {
+			const blanks = [...line.querySelectorAll<HTMLElement>('.tk-blank, .tk-ans')];
+			const ops = [...line.querySelectorAll<HTMLElement>('.tk-op')];
+			for (const b of blanks) {
+				const br = b.getBoundingClientRect();
+				for (const o of ops) {
+					const or = o.getBoundingClientRect();
+					const separated = or.left >= br.right - 0.5 || br.left >= or.right - 0.5;
+					if (!separated) {
+						bad.push(`${(b.textContent ?? '').trim()}∩${(o.textContent ?? '').trim()} @ ${(line.textContent ?? '').trim()}`);
+					}
+				}
+			}
+		}
+		return bad;
+	}, root);
+	expect(overlaps, `op/blank overlap: ${overlaps.join(' | ')}`).toEqual([]);
+}
+
+test('横式填空：括号不盖住运算符；等号仍同列对齐', async ({ page }) => {
+	await setConfig(page, {
+		columns: 2,
+		countPerPage: 20,
+		totalCount: 20,
+		range: { min: 1, max: 100 },
+		operations: ['add', 'sub', 'mul', 'div'],
+		problemMode: 'normal',
+		blankRatio: { first: 0.34, second: 0.33, result: 0.33 },
+		showAnswerPage: true
+	});
+	await openHome(page);
+	await page.waitForTimeout(400);
+
+	const counts = await page.evaluate(() => {
+		const root = document.querySelector('[data-testid=sheet-page]');
+		if (!root) return { first: 0, mid: 0, last: 0, total: 0 };
+		let first = 0, mid = 0, last = 0, total = 0;
+		for (const line of root.querySelectorAll('.line.aligned')) {
+			const toks = [...line.querySelectorAll('.tk')];
+			const blanks = toks.filter((t) => t.classList.contains('tk-blank') || t.classList.contains('tk-ans'));
+			total += blanks.length;
+			for (const b of blanks) {
+				const i = toks.indexOf(b);
+				if (i === 0) first++;
+				else if (i === toks.length - 1) last++;
+				else mid++;
+			}
+		}
+		return { first, mid, last, total };
+	});
+	expect(counts.total, 'need blanks').toBeGreaterThan(0);
+	expect(counts.first + counts.mid + counts.last, 'blank positions').toBe(counts.total);
+
+	await expectNoOpBlankOverlap(page, '[data-testid=sheet-page]');
+	await expectEqualsAligned(page, '[data-testid=sheet-page]');
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'paren-fix-after-2col.png') });
+
+	await expect(page.locator('[data-testid=answer-page]').first()).toBeVisible();
+	await expectNoOpBlankOverlap(page, '[data-testid=answer-page]');
+	await expectEqualsAligned(page, '[data-testid=answer-page]');
+	await page.locator('[data-testid=answer-page]').first().screenshot({ path: path.join(SHOTS, 'paren-fix-after-answers.png') });
+});
+
+test('横式填空偏前置：第一操作数括号不盖住运算符', async ({ page }) => {
+	await setConfig(page, {
+		columns: 2,
+		countPerPage: 20,
+		totalCount: 20,
+		range: { min: 1, max: 100 },
+		operations: ['add', 'sub', 'mul', 'div'],
+		problemMode: 'normal',
+		blankRatio: { first: 0.8, second: 0.1, result: 0.1 },
+		showAnswerPage: false
+	});
+	await openHome(page);
+	await page.waitForTimeout(400);
+	await expectNoOpBlankOverlap(page);
+	await expectEqualsAligned(page);
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'paren-fix-after-blank-first.png') });
+});
