@@ -206,7 +206,16 @@ async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, roo
 			const ops = [...line.querySelectorAll<HTMLElement>('.tk-op')];
 			for (const b of blanks) {
 				const br = b.getBoundingClientRect();
-				const overhang = chPx(b) * 0.6;
+				const overhang = (() => {
+					const cs = getComputedStyle(b);
+					const probe = document.createElement('span');
+					probe.style.cssText = `position:absolute;visibility:hidden;font:${cs.font};font-weight:${cs.fontWeight}`;
+					probe.textContent = '(';
+					b.appendChild(probe);
+					const w = probe.getBoundingClientRect().width;
+					probe.remove();
+					return w || chPx(b) * 0.6;
+				})();
 				const parenLeft = br.left - overhang;
 				const parenRight = br.right + overhang;
 				const bContent = contentBox(b);
@@ -219,17 +228,17 @@ async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, roo
 						Math.abs(oContent.left - bContent.right) < 40 ||
 						Math.abs(bContent.left - oContent.right) < 40;
 					if (!near) continue;
-					const gap = Math.min(
-						Math.abs(oContent.left - bContent.right),
-						Math.abs(bContent.left - oContent.right)
+					/* nearer-side clearance: max of the two directed gaps */
+					const glyphParenGap = Math.max(
+						oContent.left - parenRight,
+						parenLeft - oContent.right
 					);
-					/* hanging paren may sit inside op's fixed gutter; glyph must stay clear */
-					const contentGapOk = gap >= 0.3;
+					const contentGapOk = glyphParenGap >= 1;
 					const centerClear = opCenter < parenLeft - 0.1 || opCenter > parenRight + 0.1;
 					if (!contentGapOk || !centerClear) {
 						bad.push(
 							`${(b.textContent ?? '').trim() || '(blank)'}∩${(o.textContent ?? '').trim()} @ ${(line.textContent ?? '').trim()} ` +
-								`[gap=${gap.toFixed(2)} centerIn=${!(opCenter < parenLeft || opCenter > parenRight)} ` +
+								`[glyphParenGap=${glyphParenGap.toFixed(2)} centerIn=${!(opCenter < parenLeft || opCenter > parenRight)} ` +
 								`parenR=${parenRight.toFixed(1)} opC=${opCenter.toFixed(1)}]`
 						);
 					}
@@ -239,6 +248,55 @@ async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, roo
 		return bad;
 	}, root);
 	expect(overlaps, `op/blank overlap: ${overlaps.join(' | ')}`).toEqual([]);
+}
+
+
+/** 题号「n.」不得与左侧挂出括号重叠（回归：PR#29 括号外挂后盖住题号） */
+async function expectNoProblemNumberParenOverlap(
+	page: import('@playwright/test').Page,
+	root = '[data-testid=sheet-page]'
+) {
+	const bad = await page.evaluate((sel) => {
+		const out: string[] = [];
+		const parenWidth = (el: HTMLElement) => {
+			const cs = getComputedStyle(el);
+			const probe = document.createElement('span');
+			probe.style.cssText = `position:absolute;visibility:hidden;font:${cs.font};font-size:${cs.fontSize};font-family:${cs.fontFamily};font-weight:${cs.fontWeight}`;
+			probe.textContent = '(';
+			el.appendChild(probe);
+			const w = probe.getBoundingClientRect().width;
+			probe.remove();
+			return w || parseFloat(cs.fontSize) * 0.55;
+		};
+		const glyphRight = (el: HTMLElement) => {
+			/* problem-number is fixed-width + text-align:right; measure the "n." glyphs */
+			const r = document.createRange();
+			if (el.firstChild) {
+				r.selectNodeContents(el);
+				const rects = [...r.getClientRects()];
+				if (rects.length) return Math.max(...rects.map((x) => x.right));
+			}
+			return el.getBoundingClientRect().right;
+		};
+		for (const line of document.querySelectorAll(`${sel} .line.aligned`)) {
+			const num = line.querySelector<HTMLElement>('.problem-number');
+			const firstTk = line.querySelector<HTMLElement>('.tk');
+			if (!num || !firstTk) continue;
+			if (!firstTk.classList.contains('tk-blank') && !firstTk.classList.contains('tk-ans')) continue;
+			const numGlyphR = glyphRight(num);
+			const br = firstTk.getBoundingClientRect();
+			/* ::before { right:100% } → paren right edge at blank.left */
+			const parenLeft = br.left - parenWidth(firstTk);
+			const gap = parenLeft - numGlyphR;
+			if (gap < 1) {
+				out.push(
+					`${(num.textContent ?? '').trim()}∩( @ ${(line.textContent ?? '').trim()} gap=${gap.toFixed(2)} numGlyphR=${numGlyphR.toFixed(1)} parenL=${parenLeft.toFixed(1)} blankL=${br.left.toFixed(1)}`
+				);
+			}
+		}
+		return out;
+	}, root);
+	expect(bad, bad.join(' | ')).toEqual([]);
 }
 
 test('横式填空：括号不盖住运算符；等号仍同列对齐', async ({ page }) => {
@@ -276,11 +334,13 @@ test('横式填空：括号不盖住运算符；等号仍同列对齐', async ({
 	expect(counts.first + counts.mid + counts.last, 'blank positions').toBe(counts.total);
 
 	await expectNoOpBlankOverlap(page, '[data-testid=sheet-page]');
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=sheet-page]');
 	await expectEqualsAligned(page, '[data-testid=sheet-page]');
 	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'align-space-after-2col.png') });
 
 	await expect(page.locator('[data-testid=answer-page]').first()).toBeVisible();
 	await expectNoOpBlankOverlap(page, '[data-testid=answer-page]');
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=answer-page]');
 	await expectEqualsAligned(page, '[data-testid=answer-page]');
 	await page.locator('[data-testid=answer-page]').first().screenshot({ path: path.join(SHOTS, 'align-space-after-answers.png') });
 });
@@ -299,6 +359,48 @@ test('横式填空偏前置：第一操作数括号不盖住运算符', async ({
 	await openHome(page);
 	await page.waitForTimeout(400);
 	await expectNoOpBlankOverlap(page);
+	await expectNoProblemNumberParenOverlap(page);
 	await expectEqualsAligned(page);
-	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'align-space-after-blank-first.png') });
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'num-paren-after-blank-first.png') });
+});
+
+test('横式填空偏前置：题号不与左括号重叠', async ({ page }) => {
+	await setConfig(page, {
+		columns: 2,
+		countPerPage: 20,
+		totalCount: 20,
+		range: { min: 1, max: 100 },
+		operations: ['add', 'sub', 'mul', 'div'],
+		problemMode: 'normal',
+		blankRatio: { first: 1, second: 0, result: 0 },
+		showAnswerPage: true
+	});
+	await openHome(page);
+	await page.waitForTimeout(400);
+
+	const firstBlankLines = await page.evaluate(() => {
+		const root = document.querySelector('[data-testid=sheet-page]');
+		if (!root) return 0;
+		return [...root.querySelectorAll('.line.aligned')].filter((l) => {
+			const first = l.querySelector('.tk');
+			return first?.classList.contains('tk-blank');
+		}).length;
+	});
+	expect(firstBlankLines, 'expect most first-operands blank').toBeGreaterThan(10);
+
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=sheet-page]');
+	await expectNoOpBlankOverlap(page, '[data-testid=sheet-page]');
+	await expectEqualsAligned(page, '[data-testid=sheet-page]');
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'num-paren-clear-blank-first.png') });
+
+	await expect(page.locator('[data-testid=answer-page]').first()).toBeVisible();
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=answer-page]');
+	await expectNoOpBlankOverlap(page, '[data-testid=answer-page]');
+	await expectEqualsAligned(page, '[data-testid=answer-page]');
+	await page.locator('[data-testid=answer-page]').first().screenshot({ path: path.join(SHOTS, 'num-paren-clear-answers.png') });
+
+	await page.emulateMedia({ media: 'print' });
+	await page.waitForTimeout(200);
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=sheet-page]');
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'num-paren-clear-print.png') });
 });

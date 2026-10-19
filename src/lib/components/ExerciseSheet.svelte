@@ -449,13 +449,20 @@
 	.aligned .tk-ans::after {
 		color: #e8590c;
 	}
+	/*
+	 * 题号右侧统一留出挂括号宽度（所有横式行一致，避免只给 blank-first
+	 * 加 margin 导致同列「=」漂移）。约 1ch 括号 + 可见间隙（≥6px）。
+	 */
+	.aligned .problem-number {
+		margin-right: 1.35em;
+	}
 	.aligned .tk-ans:not(:first-child):not(:last-child) {
 		margin: 0;
 	}
 	.aligned .tk-op {
-		/* ~1.7em so hanging paren (~0.6ch each side) does not cover the glyph */
-		width: 1.7em;
-		min-width: 1.7em;
+		/* ~2.65em: hanging ) / ( sit in gutter; glyph stays ≥2px clear of paren */
+		width: 2.65em;
+		min-width: 2.65em;
 		margin: 0;
 		text-align: center;
 	}
