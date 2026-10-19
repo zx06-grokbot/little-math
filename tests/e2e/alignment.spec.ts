@@ -167,23 +167,12 @@ test('对齐后整页字号仍统一（不破坏 --fit-line-size）', async ({ p
 
 /**
  * 填空括号不得与相邻运算符重叠。
- * 括号由 ::before/::after 挂在槽外，getBoundingClientRect 不含伪元素，
- * 因此用 Range 量数字内容盒，再按 ~0.6ch 悬伸估算括号外沿，
- * 并要求 op 字形中心不落在 blank±paren 范围内；内容盒与 op 内容盒间隙 ≥ 0.3px。
+ * 括号画在槽内 padding（left:0 / right:0），槽边框即括号外沿；
+ * 要求相邻 op 字形与槽外沿间隙 ≥ 2px。
  */
 async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, root = '[data-testid=sheet-page]') {
 	const overlaps = await page.evaluate((sel) => {
 		const bad: string[] = [];
-		const chPx = (el: HTMLElement) => {
-			const cs = getComputedStyle(el);
-			const probe = document.createElement('span');
-			probe.style.cssText = `position:absolute;visibility:hidden;font:${cs.font};font-size:${cs.fontSize};font-family:${cs.fontFamily}`;
-			probe.textContent = '0';
-			el.appendChild(probe);
-			const w = probe.getBoundingClientRect().width;
-			probe.remove();
-			return w || parseFloat(cs.fontSize) * 0.5;
-		};
 		const contentBox = (el: HTMLElement) => {
 			const r = document.createRange();
 			if (el.firstChild) {
@@ -206,40 +195,27 @@ async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, roo
 			const ops = [...line.querySelectorAll<HTMLElement>('.tk-op')];
 			for (const b of blanks) {
 				const br = b.getBoundingClientRect();
-				const overhang = (() => {
-					const cs = getComputedStyle(b);
-					const probe = document.createElement('span');
-					probe.style.cssText = `position:absolute;visibility:hidden;font:${cs.font};font-weight:${cs.fontWeight}`;
-					probe.textContent = '(';
-					b.appendChild(probe);
-					const w = probe.getBoundingClientRect().width;
-					probe.remove();
-					return w || chPx(b) * 0.6;
-				})();
-				const parenLeft = br.left - overhang;
-				const parenRight = br.right + overhang;
+				/* 括号在 padding 内，槽 border-box 外沿 ≈ 括号外沿 */
+				const parenLeft = br.left;
+				const parenRight = br.right;
 				const bContent = contentBox(b);
 				for (const o of ops) {
-					const or = o.getBoundingClientRect();
 					const oContent = contentBox(o);
 					const opCenter = (oContent.left + oContent.right) / 2;
-					/* adjacent only: ignore non-neighbor ops (e.g. blank vs far =) */
 					const near =
 						Math.abs(oContent.left - bContent.right) < 40 ||
 						Math.abs(bContent.left - oContent.right) < 40;
 					if (!near) continue;
-					/* nearer-side clearance: max of the two directed gaps */
 					const glyphParenGap = Math.max(
 						oContent.left - parenRight,
 						parenLeft - oContent.right
 					);
-					const contentGapOk = glyphParenGap >= 1;
+					const contentGapOk = glyphParenGap >= 2;
 					const centerClear = opCenter < parenLeft - 0.1 || opCenter > parenRight + 0.1;
 					if (!contentGapOk || !centerClear) {
 						bad.push(
 							`${(b.textContent ?? '').trim() || '(blank)'}∩${(o.textContent ?? '').trim()} @ ${(line.textContent ?? '').trim()} ` +
-								`[glyphParenGap=${glyphParenGap.toFixed(2)} centerIn=${!(opCenter < parenLeft || opCenter > parenRight)} ` +
-								`parenR=${parenRight.toFixed(1)} opC=${opCenter.toFixed(1)}]`
+								`[glyphParenGap=${glyphParenGap.toFixed(2)}]`
 						);
 					}
 				}
@@ -251,23 +227,13 @@ async function expectNoOpBlankOverlap(page: import('@playwright/test').Page, roo
 }
 
 
-/** 题号「n.」不得与左侧挂出括号重叠（回归：PR#29 括号外挂后盖住题号） */
+/** 题号「n.」不得与左括号重叠（回归：外挂括号压题号；槽内 padding 后仍须 ≥3px） */
 async function expectNoProblemNumberParenOverlap(
 	page: import('@playwright/test').Page,
 	root = '[data-testid=sheet-page]'
 ) {
 	const bad = await page.evaluate((sel) => {
 		const out: string[] = [];
-		const parenWidth = (el: HTMLElement) => {
-			const cs = getComputedStyle(el);
-			const probe = document.createElement('span');
-			probe.style.cssText = `position:absolute;visibility:hidden;font:${cs.font};font-size:${cs.fontSize};font-family:${cs.fontFamily};font-weight:${cs.fontWeight}`;
-			probe.textContent = '(';
-			el.appendChild(probe);
-			const w = probe.getBoundingClientRect().width;
-			probe.remove();
-			return w || parseFloat(cs.fontSize) * 0.55;
-		};
 		const glyphRight = (el: HTMLElement) => {
 			/* problem-number is fixed-width + text-align:right; measure the "n." glyphs */
 			const r = document.createRange();
@@ -285,10 +251,11 @@ async function expectNoProblemNumberParenOverlap(
 			if (!firstTk.classList.contains('tk-blank') && !firstTk.classList.contains('tk-ans')) continue;
 			const numGlyphR = glyphRight(num);
 			const br = firstTk.getBoundingClientRect();
-			/* ::before { right:100% } → paren right edge at blank.left */
-			const parenLeft = br.left - parenWidth(firstTk);
+			/* 括号在槽内 padding：左沿 ≈ blank.getBoundingClientRect().left */
+			const parenLeft = br.left;
 			const gap = parenLeft - numGlyphR;
-			if (gap < 1) {
+			/* 线上实测 1px 仍像「1(」；要求 ≥3px 可见空隙 */
+			if (gap < 3) {
 				out.push(
 					`${(num.textContent ?? '').trim()}∩( @ ${(line.textContent ?? '').trim()} gap=${gap.toFixed(2)} numGlyphR=${numGlyphR.toFixed(1)} parenL=${parenLeft.toFixed(1)} blankL=${br.left.toFixed(1)}`
 				);
@@ -403,4 +370,25 @@ test('横式填空偏前置：题号不与左括号重叠', async ({ page }) => 
 	await page.waitForTimeout(200);
 	await expectNoProblemNumberParenOverlap(page, '[data-testid=sheet-page]');
 	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'num-paren-clear-print.png') });
+});
+
+test('幼儿园 1–10 留空第一项：题号与左括号可见分离', async ({ page }) => {
+	await setConfig(page, {
+		columns: 2,
+		countPerPage: 10,
+		totalCount: 10,
+		range: { min: 1, max: 10 },
+		operations: ['add', 'sub'],
+		problemMode: 'normal',
+		blankRatio: { first: 1, second: 0, result: 0 },
+		showAnswerPage: true
+	});
+	await openHome(page);
+	await page.waitForTimeout(400);
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=sheet-page]');
+	await expectNoOpBlankOverlap(page, '[data-testid=sheet-page]');
+	await expectEqualsAligned(page, '[data-testid=sheet-page]');
+	await page.locator('[data-testid=sheet-page]').first().screenshot({ path: path.join(SHOTS, 'kinder-blank-first.png') });
+	await expectNoProblemNumberParenOverlap(page, '[data-testid=answer-page]');
+	await page.locator('[data-testid=answer-page]').first().screenshot({ path: path.join(SHOTS, 'kinder-blank-first-answers.png') });
 });
