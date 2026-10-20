@@ -1,5 +1,5 @@
-import type { AnyProblem, ExerciseConfig, Operation } from '$lib/types';
-import { OP_NAMES } from '$lib/types';
+import type { AnyProblem, ExerciseConfig, Operation } from '#lib/types.js';
+import { OP_NAMES } from '#lib/types.js';
 import type { Rng } from './random';
 import { defaultRng } from './random';
 import { generateProblemsDetailed } from './arithmetic';

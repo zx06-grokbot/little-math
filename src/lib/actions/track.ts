@@ -1,6 +1,6 @@
 import type { Action } from 'svelte/action';
-import type { Operation } from '$lib/types';
-import { trackGeneration, trackPrint } from '$lib/services/statistics';
+import type { Operation } from '#lib/types.js';
+import { trackGeneration, trackPrint } from '#lib/services/statistics.js';
 
 type TrackType = 'generation' | 'print' | 'pdf';
 type TrackOptions = {

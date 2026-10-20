@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { UI_THEMES, DEFAULT_UI_THEME, currentUiTheme, setUiTheme, type UiThemeId } from '$lib/config/uiThemes';
+	import { UI_THEMES, DEFAULT_UI_THEME, currentUiTheme, setUiTheme, type UiThemeId } from '#lib/config/uiThemes.js';
 
 	let selected = $state<UiThemeId>(DEFAULT_UI_THEME);
 

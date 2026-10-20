@@ -1,5 +1,5 @@
-import type { AnyProblem, ChainProblem, CompareProblem, MakeTargetProblem, Problem, RemainderProblem } from '$lib/types';
-import { OP_SYMBOLS } from '$lib/types';
+import type { AnyProblem, ChainProblem, CompareProblem, MakeTargetProblem, Problem, RemainderProblem } from '#lib/types.js';
+import { OP_SYMBOLS } from '#lib/types.js';
 
 /** 题目统一文字格式（在线练习、练习结果、错题本、收藏共用） */
 export const TEXT_BLANK = '(\u00a0\u00a0\u00a0)';

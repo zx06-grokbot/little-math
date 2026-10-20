@@ -1,6 +1,6 @@
-import type { StatisticsData, Operation, PracticeProgressRecord, AnyProblem } from '$lib/types';
-import { INITIAL_STATS } from '$lib/types';
-import { operationsOf } from '$lib/format';
+import type { StatisticsData, Operation, PracticeProgressRecord, AnyProblem } from '#lib/types.js';
+import { INITIAL_STATS } from '#lib/types.js';
+import { operationsOf } from '#lib/format.js';
 
 /** 每次都返回一份新的初始数据，避免修改共享的 INITIAL_STATS 常量 */
 function freshStats(): StatisticsData {

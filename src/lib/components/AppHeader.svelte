@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { zh } from '$lib/i18n/zh';
-	import UiThemeSwitcher from '$lib/components/UiThemeSwitcher.svelte';
+	import { zh } from '#lib/i18n/zh.js';
+	import UiThemeSwitcher from '#lib/components/UiThemeSwitcher.svelte';
 
 	/** 全站统一页头：品牌 + 大按钮导航 + 风格切换（打印时隐藏） */
 	const NAV = [

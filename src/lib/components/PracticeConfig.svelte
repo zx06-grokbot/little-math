@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { ExerciseConfig, Operation } from '$lib/types';
-	import { OP_NAMES } from '$lib/types';
-	import { GRADE_PRESETS } from '$lib/config/presets';
-	import { zh } from '$lib/i18n/zh';
-	import { usesOperations, usesRange, type ValidationIssue } from '$lib/generators/validate';
+	import type { ExerciseConfig, Operation } from '#lib/types.js';
+	import { OP_NAMES } from '#lib/types.js';
+	import { GRADE_PRESETS } from '#lib/config/presets.js';
+	import { zh } from '#lib/i18n/zh.js';
+	import { usesOperations, usesRange, type ValidationIssue } from '#lib/generators/validate.js';
 
 	interface Props {
 		config: ExerciseConfig;

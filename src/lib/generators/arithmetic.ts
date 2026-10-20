@@ -1,4 +1,4 @@
-import type { Problem, Operation, BlankPosition, ExerciseConfig } from '$lib/types';
+import type { Problem, Operation, BlankPosition, ExerciseConfig } from '#lib/types.js';
 import type { Rng } from './random';
 import { defaultRng, pick } from './random';
 import { fillProblems, type FillResult } from './fill';

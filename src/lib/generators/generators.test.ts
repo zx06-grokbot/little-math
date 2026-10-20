@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ExerciseConfig, Operation, Problem, ChainProblem, CompareProblem, RemainderProblem } from '$lib/types';
-import { DEFAULT_CONFIG } from '$lib/config/presets';
+import type { ExerciseConfig, Operation, Problem, ChainProblem, CompareProblem, RemainderProblem } from '#lib/types.js';
+import { DEFAULT_CONFIG } from '#lib/config/presets.js';
 import { seededRng } from './random';
 import { generateProblems, generateProblemsDetailed } from './arithmetic';
 import { chainSteps, evaluateChain, generateChainProblems, generateChainProblemsDetailed } from './chain';

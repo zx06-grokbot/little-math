@@ -1,4 +1,4 @@
-import type { ChainProblem, Operation } from '$lib/types';
+import type { ChainProblem, Operation } from '#lib/types.js';
 import type { Rng } from './random';
 import { defaultRng, pick, randInt, shuffle } from './random';
 import { fillProblems, type FillResult } from './fill';

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { AnyProblem, CompareSymbol } from '$lib/types';
-	import { addFavorite, getFavorites, removeFavorite } from '$lib/services/favorites';
-	import { formatProblemText, problemId } from '$lib/format';
+	import type { AnyProblem, CompareSymbol } from '#lib/types.js';
+	import { addFavorite, getFavorites, removeFavorite } from '#lib/services/favorites.js';
+	import { formatProblemText, problemId } from '#lib/format.js';
 
 	interface AnswerRecord {
 		problem: AnyProblem;

@@ -130,7 +130,7 @@
 
 ### 🚀 快速开始
 
-需要 **Node.js 22**（≥ 22.13）和 **pnpm 11**（`corepack enable` 后自动使用 package.json 里指定的版本）。
+需要 **Node.js 22**（≥ 22.17，SvelteKit 3 的最低要求）和 **pnpm 11**（`corepack enable` 后自动使用 package.json 里指定的版本）。
 
 ```bash
 # 安装依赖
@@ -161,19 +161,18 @@ pnpm test:e2e
 
 ### 🔧 技术栈
 
-- [SvelteKit](https://kit.svelte.dev/) - 全栈 Web 框架
+- [SvelteKit 3](https://svelte.dev/docs/kit) - 全栈 Web 框架（配置写在 `vite.config.ts` 的 `sveltekit({...})` 里，没有 `svelte.config.js`；`#lib` 子路径导入代替 `$lib`）
 - [Svelte 5](https://svelte.dev/) - 使用 runes 语法（$state, $derived, $effect）
-- [TypeScript](https://www.typescriptlang.org/) - 类型安全
-- [Vite](https://vitejs.dev/) - 构建工具
+- [TypeScript 6](https://www.typescriptlang.org/) - 类型安全
+- [Vite 8](https://vite.dev/) - 构建工具（Rolldown）
 
 ### 🔒 安全
 
-- **依赖安全**：在 `pnpm-workspace.yaml` 的 `overrides` 中强制升级 `cookie`、`tar` 到安全版本
-  - 修复 CVE-2024-47764（cookie XSS），以及 tar 的路径遍历漏洞
-  - 原因：`@sveltejs/kit` 2.x 依赖的 `cookie ^0.6.0` 存在漏洞
-  - 注意：pnpm 10 起不再读取 `package.json` 里的 `"pnpm"` 字段，overrides 必须写在 `pnpm-workspace.yaml`（之前写在 package.json 里其实没生效，实际装的是 cookie 0.6.0）
-  - 验证：`pnpm why cookie` 应只显示 `cookie@0.7.x`
-  - 参考：https://github.com/advisories/GHSA-pxg6-pf52-xh8x
+- **不再需要 overrides**：项目已升级到 SvelteKit 3（自带 `cookie@2`），`pnpm-workspace.yaml` / `package.json` 里不再有任何 `overrides` 钉版本
+  - CVE-2024-47764 / [GHSA-pxg6-pf52-xh8x](https://github.com/advisories/GHSA-pxg6-pf52-xh8x)（cookie < 0.7.0 的 XSS）：SvelteKit 2.x 依赖 `cookie ^0.6.0`，以前只能靠 overrides 强制升级；SvelteKit 3 直接依赖 `cookie ^2.0.1`，自然修复
+  - `tar`：只经由 `@sveltejs/adapter-vercel` → `@vercel/nft` → `@mapbox/node-pre-gyp`（`tar ^7.4.0`）引入，锁文件重新解析后是已修复的 `tar@7.5.22`
+- **验证**：`pnpm why cookie` 只有 `cookie@2.x`，`pnpm why tar` 只有 `tar@7.5.22` 以上，`pnpm audit` 显示 `No known vulnerabilities found`
+- 以后再出现传递依赖漏洞，优先升级直接依赖或重新解析锁文件（`pnpm update --depth Infinity <包名>`），实在不行再在 `pnpm-workspace.yaml` 加 `overrides`（pnpm 10 起只认这里，不读 `package.json` 的 `"pnpm"` 字段）
 
 ### 📁 项目结构
 

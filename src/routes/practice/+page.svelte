@@ -1,26 +1,26 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import type { ExerciseConfig, RemainderProblem, AnyProblem, CompareSymbol } from '$lib/types';
-	import { DEFAULT_CONFIG } from '$lib/config/presets';
-	import { generateWorksheet } from '$lib/generators/worksheet';
-	import { validateConfig } from '$lib/generators/validate';
-	import { correctAnswerOf, formatProblemText, isCompare, isRemainder } from '$lib/format';
-	import Timer from '$lib/components/Timer.svelte';
-	import AnswerInput from '$lib/components/AnswerInput.svelte';
-	import CompareInput from '$lib/components/CompareInput.svelte';
-	import RemainderInput from '$lib/components/RemainderInput.svelte';
-	import ProblemDisplay from '$lib/components/ProblemDisplay.svelte';
-	import PracticeResult from '$lib/components/PracticeResult.svelte';
-	import PracticeConfig from '$lib/components/PracticeConfig.svelte';
+	import type { ExerciseConfig, RemainderProblem, AnyProblem, CompareSymbol } from '#lib/types.js';
+	import { DEFAULT_CONFIG } from '#lib/config/presets.js';
+	import { generateWorksheet } from '#lib/generators/worksheet.js';
+	import { validateConfig } from '#lib/generators/validate.js';
+	import { correctAnswerOf, formatProblemText, isCompare, isRemainder } from '#lib/format.js';
+	import Timer from '#lib/components/Timer.svelte';
+	import AnswerInput from '#lib/components/AnswerInput.svelte';
+	import CompareInput from '#lib/components/CompareInput.svelte';
+	import RemainderInput from '#lib/components/RemainderInput.svelte';
+	import ProblemDisplay from '#lib/components/ProblemDisplay.svelte';
+	import PracticeResult from '#lib/components/PracticeResult.svelte';
+	import PracticeConfig from '#lib/components/PracticeConfig.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { browser } from '$app/environment';
-	import { addWrongRecord, generateWrongReview } from '$lib/services/wrongBook';
-	import { generateFavoriteReview } from '$lib/services/favorites';
-	import { checkAchievements, type Achievement } from '$lib/services/achievements';
-	import { speakProblem, isSpeechSupported } from '$lib/services/speech';
-	import { savePracticeProgress, trackAnswer, getStats } from '$lib/services/statistics';
-	import AchievementToast from '$lib/components/AchievementToast.svelte';
+	import { browser } from '$app/env';
+	import { addWrongRecord, generateWrongReview } from '#lib/services/wrongBook.js';
+	import { generateFavoriteReview } from '#lib/services/favorites.js';
+	import { checkAchievements, type Achievement } from '#lib/services/achievements.js';
+	import { speakProblem, isSpeechSupported } from '#lib/services/speech.js';
+	import { savePracticeProgress, trackAnswer, getStats } from '#lib/services/statistics.js';
+	import AchievementToast from '#lib/components/AchievementToast.svelte';
 
 	interface AnswerRecord {
 		problem: AnyProblem;
@@ -175,7 +175,7 @@
 	function handleRestart() {
 		phase = 'config';
 		reviewMessage = null;
-		if (page.url.searchParams.get('mode')) goto('/practice', { replaceState: true });
+		if (page.url.searchParams.get('mode')) goto('/practice', { replace: true });
 	}
 
 	function handleBackHome() {

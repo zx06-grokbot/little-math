@@ -1,4 +1,4 @@
-import type { WrongRecord, AnyProblem } from '$lib/types';
+import type { WrongRecord, AnyProblem } from '#lib/types.js';
 
 const STORAGE_KEY = 'little-math-wrong-book';
 const MAX_RECORDS = 100;

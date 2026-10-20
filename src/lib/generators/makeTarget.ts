@@ -1,4 +1,4 @@
-import type { MakeTargetProblem, MakeTargetValue } from '$lib/types';
+import type { MakeTargetProblem, MakeTargetValue } from '#lib/types.js';
 import type { Rng } from './random';
 import { defaultRng } from './random';
 import { fillProblems, type FillResult } from './fill';

@@ -1,4 +1,4 @@
-import type { StatisticsData } from '$lib/types';
+import type { StatisticsData } from '#lib/types.js';
 
 export interface Achievement {
 	id: string;

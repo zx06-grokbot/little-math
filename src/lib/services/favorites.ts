@@ -1,4 +1,4 @@
-import type { AnyProblem } from '$lib/types';
+import type { AnyProblem } from '#lib/types.js';
 
 const FAVORITES_KEY = 'little-math-favorites';
 
