@@ -242,6 +242,8 @@ test.describe('A. 主页出题与配置', () => {
 	});
 
 	test('A18 主题切换后 CSS 变量变化，预览仍有题', async ({ page }) => {
+		// 界面风格 A/B/C 下卷面配色由界面风格决定，「打印主题」选择器隐藏；此用例只针对原版
+		test.skip(!!process.env.E2E_UI_THEME, '打印主题选择器只在原版界面显示');
 		await setConfig(page, { totalCount: 8, countPerPage: 8 });
 		await openHome(page);
 		const before = await page.locator('.sheet-container').evaluate((el) =>

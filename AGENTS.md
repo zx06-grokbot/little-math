@@ -156,6 +156,12 @@ interface WrongRecord {
   - 结果：#51cf66（绿色）
 - **装饰**：使用 emoji（🌟 🧮 ✨）增加趣味性
 - **填空括号**：使用 `\u00a0`（不换行空格）保持宽度
+- **界面风格（预览）**：`src/lib/styles/ui-themes.css` + `src/lib/config/uiThemes.ts`
+  - A 清新童趣 / B 纸感学习本 / C 现代扁平；顶部「界面风格」切换，或网址 `?theme=a|b|c`（`?theme=classic` 回原版），记在 localStorage
+  - 只定义 CSS 变量，组件写 `var(--x, 原版默认值)`；没有 `data-ui-theme` 时原版样式完全不变
+  - 不改横式数字槽 / 括号 / 竖式对齐逻辑，只改颜色、底色、圆角、间距和基准字号（整页统一字号仍由 `--fit-line-size` 决定）
+  - 打印、导出 PDF 一律黑字白底（`@media print` 与导出时的 `html[data-ink=print]`）
+  - `E2E_UI_THEME=a pnpm test:e2e` 可在指定风格下跑整套 e2e
 
 ## 打印相关
 

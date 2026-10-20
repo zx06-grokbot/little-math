@@ -138,12 +138,12 @@
 		width: 50px;
 		height: 50px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		border: none;
+		background: var(--fab-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+		border: var(--fab-border, none);
 		color: white;
 		font-size: 24px;
 		cursor: pointer;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+		box-shadow: var(--fab-shadow, 0 4px 12px rgba(0, 0, 0, 0.2));
 		transition: all 0.3s ease;
 		display: flex;
 		align-items: center;

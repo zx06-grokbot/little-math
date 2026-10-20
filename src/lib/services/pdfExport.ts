@@ -38,27 +38,37 @@ export async function exportPagesToPdf(
 	const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 	const scale = options.scale ?? 2;
 
-	for (let i = 0; i < pages.length; i++) {
-		const page = pages[i];
-		const canvas = await html2canvas(page, {
-			scale,
-			useCORS: true,
-			backgroundColor: '#ffffff',
-			logging: false,
-			width: page.offsetWidth,
-			height: page.offsetHeight,
-			scrollX: 0,
-			scrollY: 0,
-			windowWidth: Math.max(document.documentElement.clientWidth, page.offsetWidth + 40),
-			onclone: (doc, el) => {
-				// 克隆出来的页面去掉预览用的阴影和外边距
-				el.style.margin = '0';
-				el.style.boxShadow = 'none';
-				doc.querySelectorAll<HTMLElement>('.sheet-container').forEach((c) => (c.style.zoom = '1'));
-			}
-		});
-		if (i > 0) pdf.addPage('a4', 'portrait');
-		pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, A4_W, A4_H, undefined, 'FAST');
+	// 界面风格 A/B/C：导出用黑字白底（与 @media print 一致）。
+	// 必须加在原文档上：html2canvas 在 onclone 之前就读取了 ::before / ::after 等伪元素样式。
+	const html = document.documentElement;
+	const hadInk = html.hasAttribute('data-ink');
+	if (!hadInk) html.setAttribute('data-ink', 'print');
+	try {
+		for (let i = 0; i < pages.length; i++) {
+			const page = pages[i];
+			const canvas = await html2canvas(page, {
+				scale,
+				useCORS: true,
+				backgroundColor: '#ffffff',
+				logging: false,
+				width: page.offsetWidth,
+				height: page.offsetHeight,
+				scrollX: 0,
+				scrollY: 0,
+				windowWidth: Math.max(document.documentElement.clientWidth, page.offsetWidth + 40),
+				onclone: (doc, el) => {
+					// 克隆出来的页面去掉预览用的阴影和外边距
+					el.style.margin = '0';
+					el.style.boxShadow = 'none';
+					el.style.borderRadius = '0';
+					doc.querySelectorAll<HTMLElement>('.sheet-container').forEach((c) => (c.style.zoom = '1'));
+				}
+			});
+			if (i > 0) pdf.addPage('a4', 'portrait');
+			pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, A4_W, A4_H, undefined, 'FAST');
+		}
+	} finally {
+		if (!hadInk) html.removeAttribute('data-ink');
 	}
 
 	if (options.returnBlob) return pdf.output('blob');

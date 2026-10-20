@@ -228,14 +228,15 @@
 	.page {
 		width: 210mm;
 		height: 297mm;
-		padding: 11mm 13mm 10mm;
+		padding: var(--s-page-pad, 11mm 13mm 10mm);
 		box-sizing: border-box;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(180deg, var(--theme-background) 0%, #ffffff 60%);
-		margin: 0 auto 16px;
-		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+		background: var(--s-page-bg, linear-gradient(180deg, var(--theme-background) 0%, #ffffff 60%));
+		margin: 0 auto var(--s-page-gap, 16px);
+		box-shadow: var(--s-page-shadow, 0 2px 10px rgba(0, 0, 0, 0.12));
+		border-radius: var(--s-page-radius, 0);
 		break-inside: avoid;
 		page-break-inside: avoid;
 		position: relative;
@@ -250,28 +251,29 @@
 	}
 
 	.page-header h1 {
-		font-size: 26px;
+		font-size: var(--s-title-size, 26px);
 		line-height: 1.25;
-		font-weight: 700;
+		font-weight: var(--s-title-weight, 700);
+		font-family: var(--s-title-font, inherit);
 		margin: 0 0 1.5mm;
-		color: var(--theme-primary);
-		text-shadow: 2px 2px 0 var(--theme-secondary);
-		letter-spacing: 0.08em;
+		color: var(--s-title-fg, var(--theme-primary));
+		text-shadow: var(--s-title-shadow, 2px 2px 0 var(--theme-secondary));
+		letter-spacing: var(--s-title-ls, 0.08em);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
 	.page-header h1::before {
-		content: '🌟 ';
+		content: var(--s-title-before, '🌟 ');
 	}
 	.page-header h1::after {
-		content: ' 🌟';
+		content: var(--s-title-after, ' 🌟');
 	}
 
 	.subtitle {
-		font-size: 13px;
-		color: #8a7a6a;
+		font-size: var(--s-sub-size, 13px);
+		color: var(--s-sub-fg, #8a7a6a);
 		margin-bottom: 2mm;
 		white-space: nowrap;
 		overflow: hidden;
@@ -281,9 +283,9 @@
 	.info-row {
 		display: flex;
 		justify-content: center;
-		gap: 2.5rem;
-		font-size: 16px;
-		color: #5a4a3a;
+		gap: var(--s-info-gap, 2.5rem);
+		font-size: var(--s-info-size, 16px);
+		color: var(--s-info-fg, #5a4a3a);
 	}
 	.info-item {
 		display: flex;
@@ -291,19 +293,19 @@
 		gap: 0.5rem;
 	}
 	.info-label {
-		color: #ff9f43;
+		color: var(--s-info-label, #ff9f43);
 		font-weight: 600;
 	}
 	.info-line {
 		display: inline-block;
-		width: 5rem;
-		border-bottom: 2px dashed #ffc078;
+		width: var(--s-info-line-w, 5rem);
+		border-bottom: var(--s-info-line, 2px dashed #ffc078);
 	}
 	.info-line.short {
-		width: 3rem;
+		width: var(--s-info-line-w-short, 3rem);
 	}
 	.info-value {
-		color: #5c7cfa;
+		color: var(--s-info-value, #5c7cfa);
 		font-weight: 600;
 	}
 
@@ -314,8 +316,8 @@
 		display: grid;
 		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
 		grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
-		column-gap: 6mm;
-		border-top: 1px dashed #f1d9b5;
+		column-gap: var(--s-col-gap, 6mm);
+		border-top: var(--s-grid-rule, 1px dashed #f1d9b5);
 		padding-top: 2mm;
 	}
 
@@ -323,6 +325,8 @@
 		min-width: 0;
 		min-height: 0;
 		overflow: hidden;
+		/* 行底细线用 inset 阴影画，不占布局尺寸（不影响行高 / 字号计算） */
+		box-shadow: var(--s-cell-rule, none);
 		break-inside: avoid;
 		page-break-inside: avoid;
 	}
@@ -337,24 +341,24 @@
 		display: inline-block;
 		white-space: nowrap;
 		/* --fit-line-size 由 fitSheetText 在整页需要缩小时统一注入 */
-		font-size: var(--fit-line-size, 21px);
+		font-size: var(--fit-line-size, var(--s-line-3, 21px));
 		line-height: 1.3;
-		color: #4a4a4a;
+		color: var(--s-ink, #4a4a4a);
 		font-variant-numeric: tabular-nums;
 	}
 	.cols-2 .line {
-		font-size: var(--fit-line-size, 26px);
+		font-size: var(--fit-line-size, var(--s-line-2, 26px));
 	}
 	.cols-3 .line.long {
-		font-size: var(--fit-line-size, 18px);
+		font-size: var(--fit-line-size, var(--s-line-3-long, 18px));
 	}
 	.cols-2 .line.long {
-		font-size: var(--fit-line-size, 23px);
+		font-size: var(--fit-line-size, var(--s-line-2-long, 23px));
 	}
 
 	.problem-number {
 		display: inline-block;
-		color: #ff6b6b;
+		color: var(--s-qno, #ff6b6b);
 		width: 2.75em;
 		min-width: 2.75em;
 		text-align: right;
@@ -371,29 +375,29 @@
 		vertical-align: baseline;
 	}
 	.tk-num {
-		color: #5c7cfa;
+		color: var(--s-num, #5c7cfa);
 		font-weight: 600;
 	}
 	.tk-op {
-		color: #ff922b;
+		color: var(--s-op, #ff922b);
 		font-weight: 700;
 		margin: 0 0.3em;
 	}
 	.tk-blank {
-		color: #51cf66;
+		color: var(--s-blank, #51cf66);
 		font-weight: 600;
 	}
 	.tk-ans {
-		color: #e8590c;
+		color: var(--s-ans, #e8590c);
 		font-weight: 700;
 	}
 	.tk-sep {
-		color: #999;
+		color: var(--s-sep, #999);
 		margin: 0 0.35em;
 		letter-spacing: -0.05em;
 	}
 	.tk-cmp {
-		color: #ff922b;
+		color: var(--s-cmp, #ff922b);
 		font-weight: 700;
 		font-size: 1.15em;
 		margin: 0 0.5em;
@@ -437,7 +441,7 @@
 		top: 0;
 		width: 0.7em;
 		text-align: center;
-		color: #51cf66;
+		color: var(--s-paren, #51cf66);
 		font-weight: 600;
 		pointer-events: none;
 	}
@@ -450,13 +454,13 @@
 		top: 0;
 		width: 0.7em;
 		text-align: center;
-		color: #51cf66;
+		color: var(--s-paren, #51cf66);
 		font-weight: 600;
 		pointer-events: none;
 	}
 	.aligned .tk-ans::before,
 	.aligned .tk-ans::after {
-		color: #e8590c;
+		color: var(--s-ans, #e8590c);
 	}
 	.aligned .problem-number {
 		/* 括号已在槽内，题号只需常规间距 */
@@ -506,12 +510,12 @@
 		gap: 2mm;
 		padding-top: 3mm;
 		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
-		font-size: 24px;
+		font-size: var(--s-v-size, 24px);
 		font-variant-numeric: tabular-nums;
 	}
 	.v-cell .problem-number {
 		font-family: 'Comic Sans MS', 'PingFang SC', cursive, sans-serif;
-		font-size: 16px;
+		font-size: var(--s-v-qno-size, 16px);
 		min-width: 1.8em;
 		margin-top: 0.2em;
 	}
@@ -520,7 +524,7 @@
 		flex-direction: column;
 		align-items: stretch;
 		width: calc((var(--len) + 1.6) * 1ch);
-		color: #4a4a4a;
+		color: var(--s-ink, #4a4a4a);
 		font-weight: 600;
 	}
 	.v-row {
@@ -534,7 +538,7 @@
 		min-width: 1.2ch;
 		text-align: center;
 		margin-right: auto;
-		color: #ff922b;
+		color: var(--s-op, #ff922b);
 	}
 	.v-num {
 		display: inline-block;
@@ -546,19 +550,19 @@
 	}
 	.v-line {
 		height: 2px;
-		background: #333;
+		background: var(--s-rule-ink, #333);
 		margin: 0.15em 0 0.25em;
 	}
 	.v-box {
 		width: calc(var(--len) * 1ch);
 		min-width: calc(var(--len) * 1ch);
 		height: 1.2em;
-		border: 1.5px dashed #b0b0b0;
+		border: 1.5px dashed var(--s-vbox, #b0b0b0);
 		border-radius: 4px;
 		box-sizing: border-box;
 	}
 	.v-ans {
-		color: #e8590c;
+		color: var(--s-ans, #e8590c);
 	}
 
 	/* 除法竖式（长除法） */
@@ -566,7 +570,7 @@
 		display: inline-flex;
 		flex-direction: column;
 		font-weight: 600;
-		color: #4a4a4a;
+		color: var(--s-ink, #4a4a4a);
 		font-variant-numeric: tabular-nums;
 	}
 	.ld-q {
@@ -604,8 +608,8 @@
 		box-sizing: border-box;
 	}
 	.ld-dividend {
-		border-top: 2px solid #333;
-		border-left: 2px solid #333;
+		border-top: 2px solid var(--s-rule-ink, #333);
+		border-left: 2px solid var(--s-rule-ink, #333);
 		border-top-left-radius: 0.6em 1em;
 		padding: 0.15em 0.3em 0.1em 0.5em;
 	}
@@ -631,6 +635,7 @@
 		.page {
 			margin: 0 !important;
 			box-shadow: none !important;
+			border-radius: 0 !important;
 			break-after: auto;
 			page-break-after: auto;
 			-webkit-print-color-adjust: exact !important;

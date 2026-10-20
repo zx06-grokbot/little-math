@@ -3,6 +3,19 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover" />
+		<script>
+			/* 界面风格：?theme=a|b|c 优先，其次本地记忆；首屏前写到 <html data-ui-theme>（见 $lib/config/uiThemes.ts） */
+			(function () {
+				try {
+					var k = 'little-math-ui-theme';
+					var q = (new URLSearchParams(location.search).get('theme') || '').toLowerCase();
+					var t = /^(a|b|c)$/.test(q) ? q : /^(classic|default|original)$/.test(q) ? 'classic' : '';
+					if (t) localStorage.setItem(k, t);
+					else t = localStorage.getItem(k) || '';
+					if (/^(a|b|c)$/.test(t)) document.documentElement.setAttribute('data-ui-theme', t);
+				} catch (e) {}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

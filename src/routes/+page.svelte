@@ -8,6 +8,7 @@
 	import ConfigPanel from '$lib/components/ConfigPanel.svelte';
 	import ExerciseSheet from '$lib/components/ExerciseSheet.svelte';
 	import StatisticsPanel from '$lib/components/StatisticsPanel.svelte';
+	import UiThemeSwitcher from '$lib/components/UiThemeSwitcher.svelte';
 	import { zh } from '$lib/i18n/zh';
 	import { trackVisit } from '$lib/services/statistics';
 	import { loadConfig, saveConfig } from '$lib/services/configStorage';
@@ -185,6 +186,7 @@
 			<a href="/wrong-book" class="wrong-book-link">📕 错题本</a>
 			<a href="/favorites" class="favorites-link">⭐ 收藏题库</a>
 		</div>
+		<UiThemeSwitcher />
 	</header>
 
 	<main class="app-main">
@@ -260,13 +262,16 @@
 <style>
 	:global(body) {
 		margin: 0;
-		font-family:
+		font-family: var(
+			--ui-font,
 			-apple-system,
 			BlinkMacSystemFont,
 			'Segoe UI',
 			Roboto,
-			sans-serif;
-		background: #eee;
+			sans-serif
+		);
+		background: var(--ui-bg, #eee);
+		color: var(--ui-fg, inherit);
 	}
 
 	.app {
@@ -274,28 +279,34 @@
 	}
 
 	.app-header {
-		background: linear-gradient(135deg, #ff6b6b 0%, #ffa502 50%, #ffdd59 100%);
-		color: white;
-		padding: 1.25rem 2rem;
+		background: var(--h-bg, linear-gradient(135deg, #ff6b6b 0%, #ffa502 50%, #ffdd59 100%));
+		color: var(--h-fg, white);
+		padding: var(--h-pad, 1.25rem 2rem);
 		text-align: center;
-		font-family: 'Comic Sans MS', cursive, sans-serif;
+		font-family: var(--h-font, 'Comic Sans MS', cursive, sans-serif);
+		border-bottom: var(--h-border, none);
+		box-shadow: var(--h-shadow, none);
 	}
 
 	.app-header h1 {
 		margin: 0;
-		font-size: 2rem;
-		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+		font-size: var(--h-title-size, 2rem);
+		font-weight: var(--h-title-weight, bold);
+		letter-spacing: var(--h-title-ls, normal);
+		color: var(--h-title-fg, inherit);
+		text-shadow: var(--h-title-shadow, 2px 2px 4px rgba(0, 0, 0, 0.2));
 	}
 
 	.app-header h1::before {
-		content: '🧮 ';
+		content: var(--h-title-before, '🧮 ');
 	}
 
 	.app-header h1::after {
-		content: ' ✨';
+		content: var(--h-title-after, ' ✨');
 	}
 
 	.app-header p {
+		display: var(--h-sub-display, block);
 		margin: 0.5rem 0 0;
 		opacity: 0.95;
 		font-size: 1rem;
@@ -312,43 +323,49 @@
 	.practice-link,
 	.wrong-book-link,
 	.favorites-link {
-		display: inline-block;
-		padding: 0.5rem 1.25rem;
-		background: rgba(255, 255, 255, 0.25);
-		color: white;
+		display: inline-flex;
+		align-items: center;
+		min-height: var(--h-link-h, auto);
+		box-sizing: border-box;
+		padding: var(--h-link-pad, 0.5rem 1.25rem);
+		background: var(--h-link-bg, rgba(255, 255, 255, 0.25));
+		color: var(--h-link-fg, white);
+		border: var(--h-link-border, none);
 		text-decoration: none;
-		border-radius: 20px;
-		font-size: 1rem;
+		border-radius: var(--h-link-radius, 20px);
+		font-size: var(--h-link-size, 1rem);
+		font-weight: var(--h-link-weight, normal);
 		transition: background 0.2s;
 	}
 
 	.practice-link:hover,
 	.wrong-book-link:hover,
 	.favorites-link:hover {
-		background: rgba(255, 255, 255, 0.4);
+		background: var(--h-link-hover, rgba(255, 255, 255, 0.4));
 	}
 
 	.app-main {
 		display: grid;
-		grid-template-columns: 320px 1fr;
-		gap: 1.5rem;
-		padding: 1.5rem;
+		grid-template-columns: var(--ui-sidebar-w, 320px) 1fr;
+		gap: var(--ui-gap, 1.5rem);
+		padding: var(--ui-gap, 1.5rem);
 		max-width: 1400px;
 		margin: 0 auto;
 	}
 
 	.sidebar {
 		position: sticky;
-		top: 1.5rem;
+		top: var(--ui-gap, 1.5rem);
 		height: fit-content;
 	}
 
 	.preview {
-		background: #f3f0ea;
-		border-radius: 8px;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		background: var(--pv-bg, #f3f0ea);
+		border-radius: var(--pv-radius, 8px);
+		box-shadow: var(--pv-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+		border: var(--pv-border, none);
 		overflow: auto;
-		padding: 16px 8px 0;
+		padding: var(--pv-pad, 16px 8px 0);
 		min-width: 0;
 	}
 
@@ -356,14 +373,14 @@
 		max-width: 210mm;
 		margin: 0 auto 10px;
 		padding: 8px 12px;
-		border-radius: 8px;
-		background: #e7f5ff;
-		color: #1c7ed6;
-		font-size: 0.9rem;
+		border-radius: var(--ui-radius-sm, 8px);
+		background: var(--bn-bg, #e7f5ff);
+		color: var(--bn-fg, #1c7ed6);
+		font-size: var(--bn-size, 0.9rem);
 	}
 	.banner.warn {
-		background: #fff4e6;
-		color: #d9480f;
+		background: var(--bn-warn-bg, #fff4e6);
+		color: var(--bn-warn-fg, #d9480f);
 	}
 	.empty-state.error-state {
 		flex-direction: column;
@@ -383,7 +400,7 @@
 		align-items: center;
 		justify-content: center;
 		min-height: 400px;
-		color: #999;
+		color: var(--ui-muted, #999);
 	}
 
 	@media print {
@@ -450,6 +467,11 @@
 			padding: 0.4rem 1rem;
 			font-size: 0.9rem;
 		}
+		/* 界面风格 A/B/C：三个入口统一大小（原版保持不变） */
+		:global(html[data-ui-theme]) .favorites-link {
+			padding: 0.4rem 1rem;
+			font-size: 0.9rem;
+		}
 
 		.app-main {
 			grid-template-columns: 1fr;
@@ -487,6 +509,10 @@
 
 		.practice-link,
 		.wrong-book-link {
+			padding: 0.375rem 0.875rem;
+			font-size: 0.85rem;
+		}
+		:global(html[data-ui-theme]) .favorites-link {
 			padding: 0.375rem 0.875rem;
 			font-size: 0.85rem;
 		}
