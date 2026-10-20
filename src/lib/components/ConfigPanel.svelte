@@ -445,7 +445,7 @@
 			border-color 0.15s,
 			box-shadow 0.15s;
 	}
-	/* 以下只在界面风格 A/B/C 下接管，原版保持浏览器默认（字体 / 颜色 / 焦点） */
+	/* 表单控件跟随主题（字体 / 颜色 / 焦点） */
 	:global(html[data-ui-theme]) select,
 	:global(html[data-ui-theme]) input[type='number'],
 	:global(html[data-ui-theme]) input[type='text'] {
@@ -454,7 +454,7 @@
 		font-family: inherit;
 	}
 	:global(html[data-ui-theme]) .btn {
-		font-family: inherit;
+		font-family: var(--font-fun);
 	}
 	:global(html[data-ui-theme]) select:focus,
 	:global(html[data-ui-theme]) input[type='number']:focus,
@@ -705,51 +705,23 @@
 			border-radius: 12px;
 		}
 
-		h2 {
-			font-size: 1.2rem;
-			margin-bottom: 1rem;
-		}
-
 		.config-section {
 			margin-bottom: 1rem;
-		}
-
-		.config-section > label,
-		.label {
-			font-size: 0.8rem;
-		}
-
-		select,
-		input[type='number'],
-		input[type='text'] {
-			padding: 0.6rem;
-			font-size: 0.9rem;
 		}
 
 		.checkbox-group {
 			gap: 0.5rem;
 		}
 
-		.checkbox-label {
-			font-size: 0.8rem;
-		}
-
 		.range-inputs {
 			gap: 0.5rem;
 		}
-
-
 
 		.button-group {
 			flex-direction: column;
 			gap: 0.5rem;
 		}
 
-		.btn {
-			padding: 0.8rem 1rem;
-			font-size: 0.95rem;
-			min-height: 44px;
-		}
 	}
 
 	@media (max-width: 480px) {
@@ -758,16 +730,6 @@
 			border-radius: 8px;
 		}
 
-		h2 {
-			font-size: 1.1rem;
-		}
-
-
-
-		.btn {
-			padding: 0.75rem;
-			font-size: 0.9rem;
-		}
 	}
 
 	@media print {
