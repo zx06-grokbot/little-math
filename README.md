@@ -197,6 +197,7 @@ src/
 │   │   └── ui-themes.css # 主题样式、字体、打印 / PDF 点缀
 │   ├── components/       # UI 组件
 │   │   ├── AppHeader.svelte        # 顶部导航
+│   │   ├── AppFooter.svelte        # 底部小页脚（GitHub 源码链接，打印 / PDF 不显示）
 │   │   ├── ConfigPanel.svelte      # 左侧配置面板
 │   │   ├── ExerciseSheet.svelte    # 练习题显示/打印
 │   │   ├── StatisticsPanel.svelte  # 统计面板

@@ -7,6 +7,8 @@
 	import "#lib/styles/ui-themes.css";
 	// 全站统一页头（导航 + 风格切换）
 	import AppHeader from "#lib/components/AppHeader.svelte";
+	// 每页底部的 GitHub 小页脚
+	import AppFooter from "#lib/components/AppFooter.svelte";
 	// Vercel Analytics（页面浏览量）+ Speed Insights（Core Web Vitals）
 	import { page } from '$app/state';
 	import { initVercelObservability, trackRoute } from '#lib/services/vercelObservability.js';
@@ -28,3 +30,5 @@
 <AppHeader />
 
 {@render children()}
+
+<AppFooter />

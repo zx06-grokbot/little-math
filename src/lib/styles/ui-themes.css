@@ -226,6 +226,10 @@ html[data-ui-theme='a'] {
 	--fab-bg: #ffffff;
 	--fab-border: 2px solid #f6dbe4;
 	--fab-shadow: 0 6px 16px rgba(214, 170, 190, 0.3);
+	/* 页脚（GitHub 链接）：小字、跟主题色，文字对比度 ≥ 4.5 */
+	--ft-fg: #a94a6f;
+	--ft-fg-hover: #8e3a5c;
+	--ft-hover-bg: rgba(169, 74, 111, 0.1);
 	--pv-bg: #f5ede6;
 	--pv-radius: 24px;
 	--pv-shadow: none;
@@ -392,6 +396,10 @@ html[data-ui-theme='b'] {
 	--fab-bg: #fffdf8;
 	--fab-border: 1px solid #d6cfbf;
 	--fab-shadow: 0 2px 8px rgba(90, 80, 60, 0.12);
+	/* 页脚（GitHub 链接）：小字、跟主题色，文字对比度 ≥ 4.5 */
+	--ft-fg: #3a7059;
+	--ft-fg-hover: #24584a;
+	--ft-hover-bg: rgba(58, 112, 89, 0.1);
 	--pv-bg: #e6e1d6;
 	--pv-radius: 8px;
 	--pv-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -556,6 +564,10 @@ html[data-ui-theme='c'] {
 	--fab-bg: #ffffff;
 	--fab-border: 1px solid #e2e8f0;
 	--fab-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+	/* 页脚（GitHub 链接）：小字、跟主题色，文字对比度 ≥ 4.5 */
+	--ft-fg: #3a64c8;
+	--ft-fg-hover: #1f449e;
+	--ft-hover-bg: rgba(58, 100, 200, 0.1);
 	--pv-bg: #e8edf4;
 	--pv-radius: 16px;
 	--pv-shadow: none;
