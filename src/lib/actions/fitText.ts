@@ -70,6 +70,8 @@ export const fitSheetText: Action<HTMLElement, unknown> = (node) => {
 
 	fit();
 	document.fonts?.ready.then(fit);
+	// 字体是 swap 加载的：换上 Nunito / 快乐体后宽度会变，重新量一次
+	document.fonts?.addEventListener?.('loadingdone', fit);
 
 	return {
 		update() {
@@ -78,6 +80,7 @@ export const fitSheetText: Action<HTMLElement, unknown> = (node) => {
 		destroy() {
 			cancelAnimationFrame(frame);
 			ro?.disconnect();
+			document.fonts?.removeEventListener?.('loadingdone', fit);
 			node.style.removeProperty(VAR);
 			for (const line of node.querySelectorAll<HTMLElement>(':scope > .h-cell > .line')) {
 				line.style.fontSize = '';

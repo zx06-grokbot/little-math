@@ -8,12 +8,51 @@
  * 约束：
  *  - 不改横式数字槽 / 括号 / 竖式的宽度与对齐逻辑（PR #27–#31），只改颜色、底色、圆角、间距和基准字号；
  *    基准字号变大后仍由 fitSheetText 按整页统一注入 --fit-line-size，放不下时自动缩小。
- *  - 打印、导出 PDF：黑字白底，不印底色、阴影、emoji（见文件末尾）。
+ *  - 打印、导出 PDF：白底、题目纯黑，只保留浅色的主题点缀（见文件末尾）。
  *  - 面向 5 岁孩子 + 家长：大字、大按钮（≥ 48px 点击高度）、柔和不刺眼的颜色、图标代替部分文字。
  */
 
+/* ============ 字体（自托管，见 static/fonts，SIL OFL 1.1） ============
+ * Nunito：圆润的拉丁字母和数字，0–9 等宽（tabular），1/7、4/9、0/6 好区分，适合小朋友照着写
+ * 站酷快乐体（LM KuaiLe）：圆润可爱的中文，只子集化了网站里用到的字（scripts/subset-fonts.py）
+ * 都用 font-display: swap，字体没下载好或离线时先用系统圆体 / 黑体，不挡首屏
+ */
+@font-face {
+	font-family: 'LM Nunito';
+	src: url('/fonts/nunito-latin-var.woff2') format('woff2');
+	font-weight: 200 1000;
+	font-style: normal;
+	font-display: swap;
+	unicode-range: U+0020-007E, U+00A0, U+00B7, U+00D7, U+00F7, U+2013-2014, U+2018-201D, U+2026, U+2212;
+}
+@font-face {
+	font-family: 'LM KuaiLe';
+	src: url('/fonts/zcool-kuaile-subset.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
 /* ============ 共用：大字 / 大按钮 ============ */
 :root {
+	/* 正文：数字/字母用 Nunito，中文用系统圆体 → 黑体 */
+	--font-body: 'LM Nunito', 'Nunito', 'Yuanti SC', 'YouYuan', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+	/* 标题 / 按钮 / 卷面：中文用站酷快乐体 */
+	--font-fun: 'LM Nunito', 'Nunito', 'LM KuaiLe', 'Yuanti SC', 'YouYuan', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+	/* 卷面数字槽：Nunito 的 0–9 等宽；没加载时退回等宽字体，对齐仍靠 1ch */
+	--font-num: 'LM Nunito', 'Nunito', 'DejaVu Sans Mono', 'Courier New', ui-monospace, monospace;
+
+	--cp-h2-font: var(--font-fun);
+	--s-title-font: var(--font-fun);
+
+	/* 卷面装饰（屏幕与打印共用；各主题覆盖） */
+	--s-frame: none;
+	--s-frame-inset: 4mm;
+	--s-frame-radius: 0;
+	--s-header-bg: none;
+	--s-header-radius: 0;
+	--s-corner: none;
+	--s-corner-bg: #fff;
 	--c-tap: 48px;
 	--c-radius-lg: 20px;
 	--c-radius: 14px;
@@ -23,7 +62,7 @@
 	--h-sub-display: none;
 	--h-link-h: 44px;
 	--h-link-pad: 0 1.15rem;
-	--h-link-size: 1.05rem;
+	--h-link-size: 1.15rem;
 	--h-link-weight: 600;
 	--h-switch-h: 38px;
 	--h-switch-mt: 0.85rem;
@@ -31,7 +70,7 @@
 
 	--cp-pad: 1.5rem 1.4rem;
 	--cp-gap: 1.35rem;
-	--cp-label-size: 1.05rem;
+	--cp-label-size: 1.2rem;
 	--cp-label-weight: 600;
 	--cp-label-gap: 0.55rem;
 	--cp-ico-display: inline-flex;
@@ -55,7 +94,7 @@
 	--cp-btns-mt: 1.75rem;
 	--cp-primary-span: 1 / -1;
 	--cp-btn-h: 56px;
-	--cp-btn-size: 1.15rem;
+	--cp-btn-size: 1.3rem;
 	--cp-btn-weight: 700;
 
 	--bn-size: 1rem;
@@ -108,7 +147,7 @@ html[data-ui-theme='a'] {
 	--c-chart-2: #e6f6ee;
 	--c-badge-bg: #fff6d6;
 	--c-badge-border: #ffe08a;
-	--ui-font: 'Nunito', 'Varela Round', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+	--ui-font: var(--font-body);
 	--ui-bg: #fbf6f1;
 	--ui-fg: #4a4458;
 	--ui-muted: #9a8fa6;
@@ -116,7 +155,7 @@ html[data-ui-theme='a'] {
 
 	--h-bg: linear-gradient(120deg, #ffe6ee 0%, #fff3df 52%, #e3f2ff 100%);
 	--h-fg: #5a4a68;
-	--h-font: var(--ui-font);
+	--h-font: var(--font-fun);
 	--h-title-fg: #df6f8e;
 	--h-title-shadow: 0 2px 0 rgba(255, 255, 255, 0.9);
 	--h-title-before: '🧮 ';
@@ -221,6 +260,13 @@ html[data-ui-theme='a'] {
 	--s-cmp: #e99a52;
 	--s-rule-ink: #5a5566;
 	--s-vbox: #c9bcd0;
+
+	--s-frame: 1.5px dashed #f4c6d3;
+	--s-frame-radius: 6mm;
+	--s-header-bg: #fff5f8;
+	--s-header-radius: 4mm;
+	--s-corner: '🍬';
+	--s-corner-bg: #fffdfa;
 }
 
 /* ============ 🌳 森林（b）：米白纸、墨绿一个强调色 ============ */
@@ -251,8 +297,7 @@ html[data-ui-theme='b'] {
 	--c-chart-2: #e4ece6;
 	--c-badge-bg: #fbf6e6;
 	--c-badge-border: #d9caa0;
-	--ui-font: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
-	--ui-serif: 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'Source Han Serif SC', 'SimSun', serif;
+	--ui-font: var(--font-body);
 	--ui-bg: #efebe3;
 	--ui-fg: #34322d;
 	--ui-muted: #8c8676;
@@ -260,7 +305,7 @@ html[data-ui-theme='b'] {
 
 	--h-bg: #faf8f3;
 	--h-fg: #34322d;
-	--h-font: var(--ui-font);
+	--h-font: var(--font-fun);
 	--h-border: 1px solid #e0d9cb;
 	--h-title-fg: #2b2a26;
 	--h-title-shadow: none;
@@ -290,7 +335,7 @@ html[data-ui-theme='b'] {
 	--cp-font: var(--ui-font);
 	--cp-fg: #34322d;
 	--cp-h2-fg: #2b2a26;
-	--cp-h2-font: var(--ui-serif);
+	--cp-h2-font: var(--font-fun);
 	--cp-h2-size: 1.4rem;
 	--cp-h2-align: left;
 	--cp-h2-before: '✎ ';
@@ -324,7 +369,7 @@ html[data-ui-theme='b'] {
 	--cp-error-fg: #b3402a;
 	--cp-btn-radius: 6px;
 	--cp-btn-h: 54px;
-	--cp-btn-size: 1.1rem;
+	--cp-btn-size: 1.25rem;
 	--cp-btn-hover-transform: none;
 	--cp-btn1-bg: #2f6f5e;
 	--cp-btn1-hover-bg: #285f51;
@@ -356,17 +401,15 @@ html[data-ui-theme='b'] {
 	--bn-warn-bg: #f7efe2;
 	--bn-warn-fg: #8a5a22;
 
-	/* 纸张 + 左侧页边线（在 9mm 页边距内，不碰题目） */
-	--s-page-bg:
-		linear-gradient(90deg, transparent 0 5.5mm, rgba(47, 111, 94, 0.3) 5.5mm calc(5.5mm + 1px), transparent calc(5.5mm + 1px)),
-		#fffdf7;
+	/* 米白纸（已去掉左侧竖线） */
+	--s-page-bg: #fffdf7;
 	--s-page-radius: 2px;
 	--s-page-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 6px 18px rgba(80, 70, 50, 0.1);
 	--s-title-fg: #2b2a26;
-	--s-title-font: var(--ui-serif);
+	--s-title-font: var(--font-fun);
 	--s-title-shadow: none;
-	--s-title-before: '';
-	--s-title-after: '';
+	--s-title-before: '🌿 ';
+	--s-title-after: ' 🌿';
 	--s-title-ls: 0.14em;
 	--s-sub-fg: #8c8676;
 	--s-info-fg: #4a473f;
@@ -386,6 +429,13 @@ html[data-ui-theme='b'] {
 	--s-cmp: #2f6f5e;
 	--s-rule-ink: #2b2a26;
 	--s-vbox: #b9b09c;
+
+	/* 森林不画边框：左右两侧不要竖线 */
+	--s-frame: none;
+	--s-header-bg: #f3f7f2;
+	--s-header-radius: 1mm;
+	--s-corner: '🌳';
+	--s-corner-bg: #fffdf7;
 }
 
 /* ============ 🌊 海洋（c）：白底、蓝色、对比清楚 ============ */
@@ -416,7 +466,7 @@ html[data-ui-theme='c'] {
 	--c-chart-2: #e3ebff;
 	--c-badge-bg: #fffbeb;
 	--c-badge-border: #fcd34d;
-	--ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+	--ui-font: var(--font-body);
 	--ui-bg: #f1f4f9;
 	--ui-fg: #0f172a;
 	--ui-muted: #64748b;
@@ -424,7 +474,7 @@ html[data-ui-theme='c'] {
 
 	--h-bg: #ffffff;
 	--h-fg: #1e293b;
-	--h-font: var(--ui-font);
+	--h-font: var(--font-fun);
 	--h-border: 1px solid #e2e8f0;
 	--h-title-fg: #0f172a;
 	--h-title-weight: 800;
@@ -484,7 +534,7 @@ html[data-ui-theme='c'] {
 	--cp-error-fg: #dc2626;
 	--cp-btn-radius: 12px;
 	--cp-btn-h: 54px;
-	--cp-btn-size: 1.1rem;
+	--cp-btn-size: 1.25rem;
 	--cp-btn-hover-transform: none;
 	--cp-btn1-bg: #3d6ef0;
 	--cp-btn1-hover-bg: #2f5fe0;
@@ -519,11 +569,11 @@ html[data-ui-theme='c'] {
 	--s-page-radius: 10px;
 	--s-page-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
 	--s-title-fg: #0f172a;
-	--s-title-font: var(--ui-font);
+	--s-title-font: var(--font-fun);
 	--s-title-weight: 800;
 	--s-title-shadow: none;
-	--s-title-before: '';
-	--s-title-after: '';
+	--s-title-before: '🌊 ';
+	--s-title-after: ' ⛵';
 	--s-title-ls: 0.06em;
 	--s-sub-fg: #64748b;
 	--s-info-fg: #334155;
@@ -542,6 +592,13 @@ html[data-ui-theme='c'] {
 	--s-cmp: #3d6ef0;
 	--s-rule-ink: #0f172a;
 	--s-vbox: #94a3b8;
+
+	--s-frame: 1.5px solid #d0def9;
+	--s-frame-radius: 4mm;
+	--s-header-bg: #f3f7ff;
+	--s-header-radius: 3mm;
+	--s-corner: '🐳';
+	--s-corner-bg: #ffffff;
 }
 
 /* ============ 全站基础样式 + 工具类（各页面直接用 class） ============ */
@@ -552,11 +609,23 @@ body {
 	color: var(--ui-fg);
 	-webkit-text-size-adjust: 100%;
 }
-button,
 input,
 select,
 textarea {
 	font-family: inherit;
+}
+/* 标题、按钮、表单标签用圆润的快乐体；快乐体只有一个字重，不要浏览器假粗体 */
+h1,
+h2,
+h3,
+h4,
+button,
+.ui-btn,
+.ui-page-title,
+.fb-title,
+.lbl {
+	font-family: var(--font-fun);
+	font-synthesis-weight: none;
 }
 
 /* 子页面外框：居中、留白 */
@@ -679,28 +748,29 @@ textarea {
 	box-shadow: var(--cp-focus-ring);
 }
 
-/* ============ 打印 / 导出 PDF：黑字白底、省墨 ============ */
+/* ============ 打印 / 导出 PDF：跟随主题的浅色点缀，题目纯黑 ============
+ * 白底、无大面积色块：只有标题 / 信息栏文字、细线、虚线框和小图标带主题色（都很浅，省墨、不影响写字）
+ * print-color-adjust: exact 让浅色真的印出来；导出 PDF 时在文档上临时加 data-ink="print" 套用同一套变量
+ */
 @media print {
 	html,
 	body {
 		background: #fff !important;
 		color: #000 !important;
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
 	}
 	html:root {
 		--s-page-bg: #fff;
 		--s-page-radius: 0;
 		--s-page-shadow: none;
-		--s-title-fg: #000;
 		--s-title-shadow: none;
-		--s-title-before: '';
-		--s-title-after: '';
-		--s-sub-fg: #333;
+		--s-sub-fg: #555;
 		--s-info-fg: #000;
-		--s-info-label: #000;
-		--s-info-line: 1px solid #000;
 		--s-info-value: #000;
-		--s-grid-rule: 1px solid #999;
 		--s-cell-rule: none;
+		--s-corner-bg: #fff;
+		/* 题目本身：一律纯黑，清楚好认 */
 		--s-ink: #000;
 		--s-qno: #000;
 		--s-num: #000;
@@ -708,28 +778,49 @@ textarea {
 		--s-blank: #000;
 		--s-paren: #000;
 		--s-ans: #000;
-		--s-sep: #333;
+		--s-sep: #444;
 		--s-cmp: #000;
 		--s-rule-ink: #000;
-		--s-vbox: #777;
+	}
+	html:root[data-ui-theme='a'] {
+		--s-title-fg: #c8507a;
+		--s-info-label: #c8507a;
+		--s-info-line: 1.5px dashed #e6a4b8;
+		--s-grid-rule: 1.5px dotted #eeb6c6;
+		--s-vbox: #df9fb3;
+		--s-frame: 1.5px dashed #f0b9c9;
+		--s-header-bg: #fff4f7;
+	}
+	html:root[data-ui-theme='b'] {
+		--s-title-fg: #2f6f5e;
+		--s-info-label: #2f6f5e;
+		--s-info-line: 1.2px solid #86ab9b;
+		--s-grid-rule: 1px solid #adc9bb;
+		--s-cell-rule: inset 0 -1px 0 #dde9e2;
+		--s-vbox: #8bb09f;
+		--s-header-bg: #f2f7f3;
+	}
+	html:root[data-ui-theme='c'] {
+		--s-title-fg: #2457d6;
+		--s-info-label: #2457d6;
+		--s-info-line: 1.5px solid #aac2f1;
+		--s-grid-rule: 1.5px solid #c6d6f6;
+		--s-vbox: #91abe2;
+		--s-frame: 1.5px solid #c6d6f6;
+		--s-header-bg: #f1f6ff;
 	}
 }
-/* 导出 PDF 时在文档上临时加 data-ink="print"，套用同一套黑白变量 */
 html:root[data-ink='print'] {
 	--s-page-bg: #fff;
 	--s-page-radius: 0;
 	--s-page-shadow: none;
-	--s-title-fg: #000;
 	--s-title-shadow: none;
-	--s-title-before: '';
-	--s-title-after: '';
-	--s-sub-fg: #333;
+	--s-sub-fg: #555;
 	--s-info-fg: #000;
-	--s-info-label: #000;
-	--s-info-line: 1px solid #000;
 	--s-info-value: #000;
-	--s-grid-rule: 1px solid #999;
 	--s-cell-rule: none;
+	--s-corner-bg: #fff;
+	/* 题目本身：一律纯黑，清楚好认 */
 	--s-ink: #000;
 	--s-qno: #000;
 	--s-num: #000;
@@ -737,8 +828,34 @@ html:root[data-ink='print'] {
 	--s-blank: #000;
 	--s-paren: #000;
 	--s-ans: #000;
-	--s-sep: #333;
+	--s-sep: #444;
 	--s-cmp: #000;
 	--s-rule-ink: #000;
-	--s-vbox: #777;
+}
+html:root[data-ink='print'][data-ui-theme='a'] {
+	--s-title-fg: #c8507a;
+	--s-info-label: #c8507a;
+	--s-info-line: 1.5px dashed #e6a4b8;
+	--s-grid-rule: 1.5px dotted #eeb6c6;
+	--s-vbox: #df9fb3;
+	--s-frame: 1.5px dashed #f0b9c9;
+	--s-header-bg: #fff4f7;
+}
+html:root[data-ink='print'][data-ui-theme='b'] {
+	--s-title-fg: #2f6f5e;
+	--s-info-label: #2f6f5e;
+	--s-info-line: 1.2px solid #86ab9b;
+	--s-grid-rule: 1px solid #adc9bb;
+	--s-cell-rule: inset 0 -1px 0 #dde9e2;
+	--s-vbox: #8bb09f;
+	--s-header-bg: #f2f7f3;
+}
+html:root[data-ink='print'][data-ui-theme='c'] {
+	--s-title-fg: #2457d6;
+	--s-info-label: #2457d6;
+	--s-info-line: 1.5px solid #aac2f1;
+	--s-grid-rule: 1.5px solid #c6d6f6;
+	--s-vbox: #91abe2;
+	--s-frame: 1.5px solid #c6d6f6;
+	--s-header-bg: #f1f6ff;
 }

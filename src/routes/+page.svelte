@@ -127,6 +127,7 @@
 
 	async function handlePrint() {
 		if (!(await ensureFresh())) return;
+		await document.fonts?.ready;
 		setTimeout(() => window.print(), 50);
 	}
 

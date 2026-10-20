@@ -163,7 +163,7 @@
 	.lbl {
 		display: inline-flex;
 		align-items: center;
-		font-size: 1.1rem;
+		font-size: 1.2rem;
 		font-weight: 600;
 		color: var(--cp-label-fg);
 	}

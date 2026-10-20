@@ -38,12 +38,14 @@ export async function exportPagesToPdf(
 	const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
 	const scale = options.scale ?? 2;
 
-	// 界面风格 A/B/C：导出用黑字白底（与 @media print 一致）。
+	// 导出与 @media print 一致：白底、题目纯黑、浅色主题点缀。
 	// 必须加在原文档上：html2canvas 在 onclone 之前就读取了 ::before / ::after 等伪元素样式。
 	const html = document.documentElement;
 	const hadInk = html.hasAttribute('data-ink');
 	if (!hadInk) html.setAttribute('data-ink', 'print');
 	try {
+		// 等自托管字体（Nunito / 快乐体）下载完再截图，避免用后备字体
+		await document.fonts?.ready;
 		for (let i = 0; i < pages.length; i++) {
 			const page = pages[i];
 			const canvas = await html2canvas(page, {

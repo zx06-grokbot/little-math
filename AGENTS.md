@@ -155,8 +155,13 @@ interface WrongRecord {
   - 覆盖所有页面：顶栏 `AppHeader`（导航 + 换颜色）在 `+layout.svelte`，全站通用的 `--c-*` 语义色和 `.ui-page / .ui-card / .ui-btn / .ui-input` 定义在 ui-themes.css
   - 新增样式请用 CSS 变量，三个主题都要定义（`:root` 即糖果，森林 / 海洋覆盖）
   - 不改横式数字槽 / 括号 / 竖式对齐逻辑，只改颜色、底色、圆角、间距和基准字号（整页统一字号仍由 `--fit-line-size` 决定）
-  - 打印、导出 PDF 一律黑字白底（`@media print` 与导出时的 `html[data-ink=print]`），没有单独的「打印主题」
+  - 打印、导出 PDF 跟随当前主题但省墨：白底、题目（数字 / 符号 / 括号 / 题号）纯黑；只有标题和信息栏文字、细线、浅色页眉、细边框和角落小图标带主题色（`@media print` 与导出时的 `html[data-ink=print]`，`print-color-adjust: exact`）。森林不画边框（左侧没有竖线）
   - `E2E_UI_THEME=a|b|c pnpm test:e2e` 可在指定主题下跑整套 e2e
+- **字体**（自托管在 `static/fonts/`，SIL OFL 1.1）：
+  - `LM Nunito`（Nunito 可变字重，拉丁子集约 27KB）：数字和字母，0–9 在所有字重下都等宽，卷面数字槽靠 `1ch` 对齐不受影响
+  - `LM KuaiLe`（站酷快乐体，只含 `src/` 用到的约 670 个字，约 72KB）：标题、按钮、标签、卷面中文
+  - 正文中文用系统圆体 / 黑体后备；都是 `font-display: swap`，只预加载 Nunito
+  - 加了新的中文文案后运行 `python3 scripts/subset-fonts.py <源字体目录>` 重新子集化
 - **填空括号**：使用 `\u00a0`（不换行空格）保持宽度
 
 ## 打印相关

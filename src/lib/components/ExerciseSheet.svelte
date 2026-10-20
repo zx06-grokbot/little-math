@@ -213,7 +213,8 @@
 
 <style>
 	.sheet-container {
-		font-family: 'Comic Sans MS', 'Chalkboard SE', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', cursive, sans-serif;
+		font-family: var(--font-fun);
+		font-synthesis-weight: none;
 		zoom: var(--sheet-zoom, 1);
 	}
 
@@ -235,12 +236,37 @@
 		position: relative;
 	}
 
+	/* 主题装饰：细边框（画在页边距里，不占布局）+ 右下角小图标；打印时同样保留（浅色、省墨） */
+	.page::before {
+		content: '';
+		position: absolute;
+		inset: var(--s-frame-inset);
+		border: var(--s-frame);
+		border-radius: var(--s-frame-radius);
+		pointer-events: none;
+	}
+	.page::after {
+		content: var(--s-corner);
+		position: absolute;
+		right: 8mm;
+		bottom: calc(var(--s-frame-inset) - 2.6mm);
+		height: 5.2mm;
+		padding: 0 1.5mm;
+		font-size: 4.2mm;
+		line-height: 5.2mm;
+		background: var(--s-corner-bg);
+		pointer-events: none;
+	}
+
 	.page-header {
 		flex: 0 0 auto;
 		height: 30mm;
 		box-sizing: border-box;
 		text-align: center;
+		padding: 2.5mm 3mm 0;
 		overflow: hidden;
+		background: var(--s-header-bg);
+		border-radius: var(--s-header-radius);
 	}
 
 	.page-header h1 {
@@ -415,9 +441,9 @@
 		padding-right: 0.7em;
 		margin: 0;
 		text-align: right;
-		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
+		font-family: var(--font-num);
 		font-variant-numeric: tabular-nums;
-		font-weight: 600;
+		font-weight: 700;
 		position: relative;
 	}
 	.aligned .tk-blank,
@@ -500,14 +526,14 @@
 	.v-cell {
 		display: flex;
 		align-items: flex-start;
-		gap: 2mm;
+		gap: 1mm;
 		padding-top: 3mm;
-		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
+		font-family: var(--font-num);
 		font-size: var(--s-v-size);
 		font-variant-numeric: tabular-nums;
 	}
 	.v-cell .problem-number {
-		font-family: 'Comic Sans MS', 'PingFang SC', cursive, sans-serif;
+		font-family: var(--font-fun);
 		font-size: var(--s-v-qno-size);
 		min-width: 1.8em;
 		margin-top: 0.2em;
