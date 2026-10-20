@@ -1,10 +1,50 @@
 # 🧮 Little Math 小小数学家
 
-幼儿园/小学数学练习生成打印工具，帮助家长和老师快速生成适合低年级学生的数学练习题。
+给幼儿园和小学低年级小朋友的数学练习小助手：点一下就出一套口算卷，能打印、存 PDF，也能在线做题。
 
-在线使用：<https://little-math.vercel.app> · 截图见 [📸 截图](#-截图)
+👉 **在线体验：<https://little-math.xuzhuo.xyz/>**（免费、免注册，手机电脑都能用）
 
-## ✨ 功能特点
+## 📝 一键出题，所见即所得
+
+选年级、玩什么（算一算 / 凑一凑 / 连着算 / 比大小 / 分一分）、横式还是竖式，右边马上出一张 A4 卷子；不满意就点「换一套」。
+
+![首页：出题面板 + 两列卷子预览（🍬糖果）](docs/screenshots/home-candy.png)
+
+## 🎨 三套主题，小朋友自己挑
+
+🍬糖果、🌳森林、🌊海洋，右上角一键切换，所有页面一起变色；数字用圆润好认的字体，1 和 7、4 和 9、0 和 6 一眼分清。
+
+![森林和海洋主题](docs/screenshots/themes-forest-ocean.png)
+
+## 🎯 在线做题，答对就有鼓励
+
+一题一题做，答对自动下一题，还能计时和语音读题；做完能看正确率、用时，逐题回顾，点 ☆ 收藏喜欢的题。
+
+![在线做题（🌊海洋）](docs/screenshots/practice.png)
+
+![做完看结果（🌊海洋）](docs/screenshots/practice-result.png)
+
+## 📕 错题本，再练一遍就会啦
+
+做错的题自动收进错题本，一键「再练一遍」，会了就点「学会了」；右下角 📊 还能看最近的练习记录。
+
+![错题本（🌳森林）](docs/screenshots/wrong-book.png)
+
+## 🖨️ 打印 / 存 PDF 也跟着主题走
+
+白底、题目纯黑、字大清楚，只留跟随主题的浅色点缀（标题色、浅色表头、细线和小图标），家用打印机省墨，也不挡小朋友写字。一页卷子正好一张 A4。
+
+![三个主题的打印效果：糖果 / 森林 / 海洋](docs/screenshots/print-themes.png)
+
+## 📱 手机上也好用
+
+出题、预览卷子、在线做题，手机上都能顺手操作。
+
+![手机界面（🍬糖果）](docs/screenshots/mobile.png)
+
+---
+
+## ✨ 功能一览
 
 ### 📝 练习题生成
 
@@ -86,7 +126,9 @@
 - 打印和「存成 PDF」都跟随当前颜色主题的浅色点缀，并设置了 `print-color-adjust: exact`，浏览器打印也能印出浅色；题目文字始终纯黑。
 - 导出 PDF 的文件名日期按浏览器本地时间、在导出时计算。
 
-## 🚀 快速开始
+## 🛠️ 开发
+
+### 🚀 快速开始
 
 需要 **Node.js 22**（≥ 22.13）和 **pnpm 11**（`corepack enable` 后自动使用 package.json 里指定的版本）。
 
@@ -111,50 +153,20 @@ pnpm exec playwright install chromium   # 首次运行
 pnpm test:e2e
 ```
 
-## 📦 部署到 Vercel
+### 📦 部署到 Vercel
 
 1. 将项目推送到 GitHub
 2. 在 [Vercel](https://vercel.com) 导入仓库
 3. 自动检测 SvelteKit，点击部署即可
 
-## 📸 截图
-
-**首页（🍬糖果，默认）**：左边「出题啦」面板选年级、玩什么、怎么写、一行几道；右边实时预览一张 A4 卷子。点「换一套」重新出题，「打印」调用浏览器打印，「存成 PDF」直接下载；右下角 📊 是使用统计。
-
-![首页：出题面板 + 两列卷子预览（糖果）](docs/screenshots/home-candy.png)
-
-**🌳森林 / 🌊海洋**：右上角一键换颜色，所有页面一起变。
-
-![森林和海洋主题的首页](docs/screenshots/themes-forest-ocean.png)
-
-**在线做题**：一题一题做，答对有鼓励，自动下一题，还有计时和语音读题。
-
-![在线做题（海洋）](docs/screenshots/practice.png)
-
-**做完看结果**：正确率、用时、逐题回顾，点 ☆ 收藏喜欢的题。
-
-![练习结果（海洋）](docs/screenshots/practice-result.png)
-
-**错题本**：做错的题自动收进来，可以「再练一遍」，会了就点「学会了」。
-
-![错题本（森林）](docs/screenshots/wrong-book.png)
-
-**打印 / PDF 效果**：白底、题目纯黑，只留跟随主题的浅色点缀（从左到右：糖果、森林、海洋）。
-
-![三个主题的打印预览](docs/screenshots/print-themes.png)
-
-**手机上**：出题、预览卷子、在线做题都能用。
-
-![手机界面（糖果）](docs/screenshots/mobile.png)
-
-## 🔧 技术栈
+### 🔧 技术栈
 
 - [SvelteKit](https://kit.svelte.dev/) - 全栈 Web 框架
 - [Svelte 5](https://svelte.dev/) - 使用 runes 语法（$state, $derived, $effect）
 - [TypeScript](https://www.typescriptlang.org/) - 类型安全
 - [Vite](https://vitejs.dev/) - 构建工具
 
-## 🔒 安全
+### 🔒 安全
 
 - **依赖安全**：在 `pnpm-workspace.yaml` 的 `overrides` 中强制升级 `cookie`、`tar` 到安全版本
   - 修复 CVE-2024-47764（cookie XSS），以及 tar 的路径遍历漏洞
@@ -163,7 +175,7 @@ pnpm test:e2e
   - 验证：`pnpm why cookie` 应只显示 `cookie@0.7.x`
   - 参考：https://github.com/advisories/GHSA-pxg6-pf52-xh8x
 
-## 📁 项目结构
+### 📁 项目结构
 
 ```
 src/
