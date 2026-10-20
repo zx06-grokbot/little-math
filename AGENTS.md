@@ -153,6 +153,7 @@ interface WrongRecord {
   - 🍬糖果（id `a`，默认）/ 🌳森林（`b`）/ 🌊海洋（`c`）；顶部「🎨」切换，或网址 `?theme=a|b|c`，也认 `candy|forest|ocean` 与中文名；记在 localStorage `little-math-ui-theme`
   - 旧值（如 `classic`）或无效值一律回到第一个主题；`src/app.html` 的内联脚本在首屏前设置 `html[data-ui-theme]`
   - 覆盖所有页面：顶栏 `AppHeader`（导航 + 换颜色）在 `+layout.svelte`，全站通用的 `--c-*` 语义色和 `.ui-page / .ui-card / .ui-btn / .ui-input` 定义在 ui-themes.css
+  - 底部页脚 `AppFooter`（一行小字 + GitHub 链接，颜色用各主题的 `--ft-*`）也在 `+layout.svelte`；打印和导出 PDF（`data-ink=print`）时隐藏，手机上留出右下角 📊 按钮的位置
   - 新增样式请用 CSS 变量，三个主题都要定义（`:root` 即糖果，森林 / 海洋覆盖）
   - 不改横式数字槽 / 括号 / 竖式对齐逻辑，只改颜色、底色、圆角、间距和基准字号（整页统一字号仍由 `--fit-line-size` 决定）
   - 打印、导出 PDF 跟随当前主题但省墨：白底、题目（数字 / 符号 / 括号 / 题号）纯黑；只有标题和信息栏文字、细线、浅色页眉、细边框和角落小图标带主题色（`@media print` 与导出时的 `html[data-ink=print]`，`print-color-adjust: exact`）。森林不画边框（左侧没有竖线）
