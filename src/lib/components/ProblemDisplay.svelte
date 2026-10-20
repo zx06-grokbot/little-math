@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { AnyProblem } from '$lib/types';
-	import { correctAnswerOf, formatProblemText } from '$lib/format';
+	import type { AnyProblem } from '#lib/types.js';
+	import { correctAnswerOf, formatProblemText } from '#lib/format.js';
 
 	interface Props {
 		problem: AnyProblem;

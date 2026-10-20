@@ -1,5 +1,5 @@
-import type { AnyProblem, Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem } from '$lib/types';
-import { OP_SYMBOLS } from '$lib/types';
+import type { AnyProblem, Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem } from '#lib/types.js';
+import { OP_SYMBOLS } from '#lib/types.js';
 
 const NUMBER_WORDS: Record<number, string> = {
 	0: '零',

@@ -1,4 +1,4 @@
-import type { Operation } from '$lib/types';
+import type { Operation } from '#lib/types.js';
 import type { Rng } from './random';
 import { randInt } from './random';
 

@@ -1,6 +1,6 @@
-import type { StatisticsData } from '$lib/types';
-import { getStats } from '$lib/services/statistics';
-import { getAchievements, getUserAchievements } from '$lib/services/achievements';
+import type { StatisticsData } from '#lib/types.js';
+import { getStats } from '#lib/services/statistics.js';
+import { getAchievements, getUserAchievements } from '#lib/services/achievements.js';
 
 export function exportStatistics(): string {
 	const stats = getStats();

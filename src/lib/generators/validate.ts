@@ -1,6 +1,6 @@
-import type { ExerciseConfig, Operation } from '$lib/types';
-import { OP_NAMES } from '$lib/types';
-import { getLayout } from '$lib/config/layout';
+import type { ExerciseConfig, Operation } from '#lib/types.js';
+import { OP_NAMES } from '#lib/types.js';
+import { getLayout } from '#lib/config/layout.js';
 import { isOpFeasible } from './rules';
 import { isRemainderFeasible, REMAINDER_MIN_DIVIDEND } from './remainder';
 import { generateChainProblem } from './chain';

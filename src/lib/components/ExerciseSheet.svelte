@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { AnyProblem, Problem } from '$lib/types';
-	import { OP_SYMBOLS } from '$lib/types';
-	import { zh } from '$lib/i18n/zh';
-	import { isChain, isCompare, isMakeTarget, isRemainder, exprText, REMAINDER_SEP } from '$lib/format';
-	import { fitSheetText } from '$lib/actions/fitText';
+	import type { AnyProblem, Problem } from '#lib/types.js';
+	import { OP_SYMBOLS } from '#lib/types.js';
+	import { zh } from '#lib/i18n/zh.js';
+	import { isChain, isCompare, isMakeTarget, isRemainder, exprText, REMAINDER_SEP } from '#lib/format.js';
+	import { fitSheetText } from '#lib/actions/fitText.js';
 
 	interface Props {
 		problems: AnyProblem[];

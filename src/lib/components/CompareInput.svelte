@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CompareSymbol } from '$lib/types';
+	import type { CompareSymbol } from '#lib/types.js';
 
 	interface Props {
 		onSubmit: (answer: CompareSymbol) => void;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Achievement } from '$lib/services/achievements';
+	import type { Achievement } from '#lib/services/achievements.js';
 
 	interface Props {
 		achievement: Achievement;

@@ -208,40 +208,13 @@ interface WrongRecord {
 ## 部署
 
 - 目标平台：Vercel
-- 使用 @sveltejs/adapter-auto（Vercel 自动识别）
+- 使用 @sveltejs/adapter-auto（Vercel 上自动换成 @sveltejs/adapter-vercel 7，运行时 nodejs22.x；SvelteKit 3 要求 Node ≥ 22.17，engines 写 22.x）
+- Vercel Analytics / Speed Insights 走 `#lib/services/vercelObservability.ts`（官方 `/sveltekit` 入口还依赖 Kit 3 已移除的 `$app/stores`，不能用）
 
 ## 安全
 
 ### 依赖安全
 
-- 在 pnpm-workspace.yaml 的 overrides 中强制升级有漏洞的包（pnpm 10+ 不再读取 package.json 的 "pnpm" 字段）
-- 修复 CVE-2024-47764（cookie XSS 漏洞）
-- 修复 GHSA-8qq5-rm4j-mr97 和 GHSA-r6q2-hw4h-h46w（tar 路径遍历漏洞）
-
-### CVE-2024-47764 说明
-
-**漏洞详情：**
-- 影响范围：`cookie` 包版本 < 0.7.0
-- 漏洞类型：XSS（跨站脚本攻击）
-- 影响：cookie 名称、路径和域名的验证不严格，可能导致攻击者注入恶意代码
-
-**修复方案（pnpm-workspace.yaml）：**
-```yaml
-overrides:
-  cookie: ^0.7.0
-  tar: ^7.5.4
-```
-
-**为什么需要 overrides：**
-- `@sveltejs/kit` 2.x 系列的所有版本都依赖 `cookie ^0.6.0`
-- 即使升级到最新版本的 `@sveltejs/kit`，也无法直接解决此漏洞
-- 使用 overrides 可以强制覆盖依赖树中的 cookie 版本
-
-**验证：**
-```bash
-pnpm why cookie  # 应显示 cookie 0.7.2
-```
-
-**参考：**
-- GitHub Advisory: https://github.com/advisories/GHSA-pxg6-pf52-xh8x
-- CVE Details: https://nvd.nist.gov/vuln/detail/CVE-2024-47764
+- 不使用 pnpm `overrides`：升级到 SvelteKit 3 后 `cookie` 是 2.x（修复 CVE-2024-47764 / GHSA-pxg6-pf52-xh8x），`tar` 经 `@sveltejs/adapter-vercel` → `@vercel/nft` → `@mapbox/node-pre-gyp`（`^7.4.0`）解析到已修复版本
+- 验证：`pnpm why cookie`、`pnpm why tar`、`pnpm audit`（应为 `No known vulnerabilities found`）
+- 传递依赖出漏洞时先升级直接依赖 / 重新解析锁文件；必须钉版本时写在 pnpm-workspace.yaml 的 overrides（pnpm 10+ 不读 package.json 的 "pnpm" 字段），并在这里写清原因

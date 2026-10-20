@@ -1,4 +1,4 @@
-import type { CompareProblem, CompareSymbol, Operation } from '$lib/types';
+import type { CompareProblem, CompareSymbol, Operation } from '#lib/types.js';
 import type { Rng } from './random';
 import { defaultRng, pick, shuffle } from './random';
 import { fillProblems, type FillResult } from './fill';

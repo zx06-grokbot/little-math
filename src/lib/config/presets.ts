@@ -1,4 +1,4 @@
-import type { GradePreset, Operation, ExerciseConfig, BlankPosition } from '$lib/types';
+import type { GradePreset, Operation, ExerciseConfig, BlankPosition } from '#lib/types.js';
 
 /** 年级预设配置 */
 export const GRADE_PRESETS: Record<string, GradePreset> = {

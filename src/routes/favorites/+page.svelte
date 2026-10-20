@@ -1,9 +1,9 @@
 <script lang="ts">
-	import type { AnyProblem } from '$lib/types';
-	import { formatProblemText } from '$lib/format';
-	import { getFavorites, clearFavorites, removeFavorite } from '$lib/services/favorites';
+	import type { AnyProblem } from '#lib/types.js';
+	import { formatProblemText } from '#lib/format.js';
+	import { getFavorites, clearFavorites, removeFavorite } from '#lib/services/favorites.js';
 	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	let records = $state<{ problem: AnyProblem; timestamp: number }[]>([]);
 

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { StatisticsData } from '$lib/types';
-	import { getStats, getLast7DaysStats, resetStats, getDailyProgress } from '$lib/services/statistics';
-	import { OP_NAMES } from '$lib/types';
-	import ProgressChart from '$lib/components/ProgressChart.svelte';
-	import { downloadStatisticsJSON, downloadStatisticsCSV } from '$lib/services/export';
+	import type { StatisticsData } from '#lib/types.js';
+	import { getStats, getLast7DaysStats, resetStats, getDailyProgress } from '#lib/services/statistics.js';
+	import { OP_NAMES } from '#lib/types.js';
+	import ProgressChart from '#lib/components/ProgressChart.svelte';
+	import { downloadStatisticsJSON, downloadStatisticsCSV } from '#lib/services/export.js';
 
 	let stats: StatisticsData = $state<StatisticsData>(getStats());
 	let last7Days = $state(getLast7DaysStats());

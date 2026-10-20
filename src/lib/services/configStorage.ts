@@ -1,5 +1,5 @@
-import type { ExerciseConfig } from '$lib/types';
-import { DEFAULT_CONFIG } from '$lib/config/presets';
+import type { ExerciseConfig } from '#lib/types.js';
+import { DEFAULT_CONFIG } from '#lib/config/presets.js';
 
 const STORAGE_KEY = 'little-math-config';
 const PRESETS_KEY = 'little-math-presets';

@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { onMount, tick, untrack } from 'svelte';
-	import type { AnyProblem, ExerciseConfig, Operation } from '$lib/types';
-	import { DEFAULT_CONFIG } from '$lib/config/presets';
-	import { effectivePerPage, getLayout } from '$lib/config/layout';
-	import { generateWorksheet, autoTitle, settingsSummary } from '$lib/generators/worksheet';
-	import { validateConfig } from '$lib/generators/validate';
-	import ConfigPanel from '$lib/components/ConfigPanel.svelte';
-	import ExerciseSheet from '$lib/components/ExerciseSheet.svelte';
-	import StatisticsPanel from '$lib/components/StatisticsPanel.svelte';
-	import { zh } from '$lib/i18n/zh';
-	import { trackVisit } from '$lib/services/statistics';
-	import { loadConfig, saveConfig } from '$lib/services/configStorage';
-	import { browser } from '$app/environment';
+	import type { AnyProblem, ExerciseConfig, Operation } from '#lib/types.js';
+	import { DEFAULT_CONFIG } from '#lib/config/presets.js';
+	import { effectivePerPage, getLayout } from '#lib/config/layout.js';
+	import { generateWorksheet, autoTitle, settingsSummary } from '#lib/generators/worksheet.js';
+	import { validateConfig } from '#lib/generators/validate.js';
+	import ConfigPanel from '#lib/components/ConfigPanel.svelte';
+	import ExerciseSheet from '#lib/components/ExerciseSheet.svelte';
+	import StatisticsPanel from '#lib/components/StatisticsPanel.svelte';
+	import { zh } from '#lib/i18n/zh.js';
+	import { trackVisit } from '#lib/services/statistics.js';
+	import { loadConfig, saveConfig } from '#lib/services/configStorage.js';
+	import { browser } from '$app/env';
 
 	const OPS: Operation[] = ['add', 'sub', 'mul', 'div'];
 
@@ -140,7 +140,7 @@
 		zoom = 1;
 		try {
 			await tick();
-			const { exportPagesToPdf } = await import('$lib/services/pdfExport');
+			const { exportPagesToPdf } = await import('#lib/services/pdfExport.js');
 			await exportPagesToPdf(element);
 		} catch (error) {
 			console.error('PDF导出失败:', error);

@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { WrongRecord, AnyProblem } from '$lib/types';
-	import { formatProblemText } from '$lib/format';
+	import type { WrongRecord, AnyProblem } from '#lib/types.js';
+	import { formatProblemText } from '#lib/format.js';
 	import {
 		getWrongRecords,
 		clearWrongRecords,
 		removeWrongRecord
-	} from '$lib/services/wrongBook';
+	} from '#lib/services/wrongBook.js';
 	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	let records: WrongRecord[] = $state([]);
 

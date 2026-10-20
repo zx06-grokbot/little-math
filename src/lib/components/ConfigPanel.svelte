@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { ExerciseConfig, Operation, BlankPosition, MakeTargetValue } from '$lib/types';
-	import { OP_NAMES } from '$lib/types';
-	import { GRADE_PRESETS } from '$lib/config/presets';
-	import { getLayout, supportsVertical } from '$lib/config/layout';
-	import { usesOperations, usesRange, TOTAL_COUNT_LIMIT, type ValidationIssue, type ConfigField } from '$lib/generators/validate';
-	import { RANGE_RULE_TEXT } from '$lib/generators/rules';
-	import { REMAINDER_DIVISOR_MAX, REMAINDER_DIVISOR_MIN } from '$lib/generators/remainder';
-	import { zh } from '$lib/i18n/zh';
-	import { track } from '$lib/actions/track';
+	import type { ExerciseConfig, Operation, BlankPosition, MakeTargetValue } from '#lib/types.js';
+	import { OP_NAMES } from '#lib/types.js';
+	import { GRADE_PRESETS } from '#lib/config/presets.js';
+	import { getLayout, supportsVertical } from '#lib/config/layout.js';
+	import { usesOperations, usesRange, TOTAL_COUNT_LIMIT, type ValidationIssue, type ConfigField } from '#lib/generators/validate.js';
+	import { RANGE_RULE_TEXT } from '#lib/generators/rules.js';
+	import { REMAINDER_DIVISOR_MAX, REMAINDER_DIVISOR_MIN } from '#lib/generators/remainder.js';
+	import { zh } from '#lib/i18n/zh.js';
+	import { track } from '#lib/actions/track.js';
 
 	const MAKE_TARGET_OPTIONS: MakeTargetValue[] = [10, 20, 100];
 
@@ -354,7 +354,7 @@
 </div>
 
 <style>
-	/* 所有 var(--cp-*, 默认值)：默认值即原版样式；界面风格 A/B/C 在 $lib/styles/ui-themes.css 里覆盖 */
+	/* 所有 var(--cp-*, 默认值)：默认值即原版样式；界面风格 A/B/C 在 #lib/styles/ui-themes.css 里覆盖 */
 	.config-panel {
 		padding: var(--cp-pad);
 		background: var(--cp-bg);

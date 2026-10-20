@@ -1,4 +1,4 @@
-import type { RemainderProblem } from '$lib/types';
+import type { RemainderProblem } from '#lib/types.js';
 import type { Rng } from './random';
 import { defaultRng, randInt } from './random';
 import { fillProblems, type FillResult } from './fill';

@@ -46,7 +46,7 @@ describe('统计与成就（第二轮问题 5）', () => {
 
 	it('重置不会污染初始常量', async () => {
 		const stats = await import('./statistics');
-		const { INITIAL_STATS } = await import('$lib/types');
+		const { INITIAL_STATS } = await import('#lib/types.js');
 		stats.trackVisit();
 		stats.resetStats();
 		stats.trackVisit();

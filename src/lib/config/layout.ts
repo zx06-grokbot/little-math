@@ -1,4 +1,4 @@
-import type { ExerciseConfig, ProblemMode } from '$lib/types';
+import type { ExerciseConfig, ProblemMode } from '#lib/types.js';
 
 /**
  * 打印版式：网页上的一「页」= 一张 A4 纸。
