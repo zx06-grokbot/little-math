@@ -29,7 +29,7 @@
 </script>
 
 <div class="timer" data-testid="timer">
-	<span class="icon">⏱️</span>
+	<span class="icon" aria-hidden="true">⏱️</span>
 	<span class="time" data-testid="timer-value">{formatTime(seconds)}</span>
 </div>
 
@@ -37,35 +37,17 @@
 	.timer {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		font-size: 1.5rem;
-		font-family: 'Comic Sans MS', cursive;
-		color: #5c7cfa;
+		gap: 0.4rem;
+		min-height: 48px;
+		padding: 0 0.9rem;
+		border-radius: 999px;
+		background: var(--c-info-soft);
+		color: var(--c-info);
+		font-size: 1.35rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
 	}
 	.icon {
-		font-size: 1.25rem;
-	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		.timer {
-			font-size: 1.25rem;
-			gap: 0.4rem;
-		}
-
-		.icon {
-			font-size: 1.1rem;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.timer {
-			font-size: 1.1rem;
-			gap: 0.35rem;
-		}
-
-		.icon {
-			font-size: 1rem;
-		}
+		font-size: 1.15rem;
 	}
 </style>

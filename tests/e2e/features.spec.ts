@@ -240,19 +240,4 @@ test.describe('A. 主页出题与配置', () => {
 		await expect(page.getByTestId('columns')).toHaveValue('3');
 		await expect(page.getByTestId('op-mul')).toBeChecked();
 	});
-
-	test('A18 主题切换后 CSS 变量变化，预览仍有题', async ({ page }) => {
-		await setConfig(page, { totalCount: 8, countPerPage: 8 });
-		await openHome(page);
-		const before = await page.locator('.sheet-container').evaluate((el) =>
-			getComputedStyle(el).getPropertyValue('--theme-primary').trim()
-		);
-		await page.getByTestId('theme-cartoon').click();
-		await page.waitForTimeout(200);
-		const after = await page.locator('.sheet-container').evaluate((el) =>
-			getComputedStyle(el).getPropertyValue('--theme-primary').trim()
-		);
-		expect(after).not.toBe(before);
-		await expect(page.locator('[data-testid=sheet-page] [data-testid=problem]').first()).toBeVisible();
-	});
 });

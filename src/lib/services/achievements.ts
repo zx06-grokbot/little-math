@@ -16,78 +16,78 @@ export interface UserAchievement {
 const ACHIEVEMENTS: Achievement[] = [
 	{
 		id: 'first-10',
-		name: '初露锋芒',
-		description: '完成 10 道题',
+		name: '小苗苗',
+		description: '做完 10 道题',
 		icon: '⭐',
 		condition: (stats) => (stats.totalAnswered ?? 0) >= 10
 	},
 	{
 		id: 'first-50',
-		name: '小试牛刀',
-		description: '完成 50 道题',
+		name: '小星星',
+		description: '做完 50 道题',
 		icon: '🌟',
 		condition: (stats) => (stats.totalAnswered ?? 0) >= 50
 	},
 	{
 		id: 'first-100',
 		name: '小小数学家',
-		description: '完成 100 道题',
+		description: '做完 100 道题',
 		icon: '🏆',
 		condition: (stats) => (stats.totalAnswered ?? 0) >= 100
 	},
 	{
 		id: 'first-500',
-		name: '数学达人',
-		description: '完成 500 道题',
+		name: '数学小达人',
+		description: '做完 500 道题',
 		icon: '👑',
 		condition: (stats) => (stats.totalAnswered ?? 0) >= 500
 	},
 	{
 		id: 'first-1000',
-		name: '数学大师',
-		description: '完成 1000 道题',
+		name: '数学大王',
+		description: '做完 1000 道题',
 		icon: '🎖️',
 		condition: (stats) => (stats.totalAnswered ?? 0) >= 1000
 	},
 	{
 		id: 'add-master',
-		name: '加法专家',
-		description: '完成 100 道加法题',
+		name: '加法小能手',
+		description: '做完 100 道加法题',
 		icon: '➕',
 		condition: (stats) => (stats.answeredByOp?.add ?? 0) >= 100
 	},
 	{
 		id: 'sub-master',
-		name: '减法专家',
-		description: '完成 100 道减法题',
+		name: '减法小能手',
+		description: '做完 100 道减法题',
 		icon: '➖',
 		condition: (stats) => (stats.answeredByOp?.sub ?? 0) >= 100
 	},
 	{
 		id: 'mul-master',
-		name: '乘法专家',
-		description: '完成 100 道乘法题',
+		name: '乘法小能手',
+		description: '做完 100 道乘法题',
 		icon: '✖️',
 		condition: (stats) => (stats.answeredByOp?.mul ?? 0) >= 100
 	},
 	{
 		id: 'div-master',
-		name: '除法专家',
-		description: '完成 100 道除法题',
+		name: '除法小能手',
+		description: '做完 100 道除法题',
 		icon: '➗',
 		condition: (stats) => (stats.answeredByOp?.div ?? 0) >= 100
 	},
 	{
 		id: 'print-lover',
-		name: '打印达人',
-		description: '打印 20 次',
+		name: '打印小能手',
+		description: '打印过 20 次',
 		icon: '🖨️',
 		condition: (stats) => stats.totalPrints >= 20
 	},
 	{
 		id: 'daily-warrior',
-		name: '坚持练习',
-		description: '连续练习 7 天',
+		name: '天天练',
+		description: '连着 7 天都来练',
 		icon: '🔥',
 		condition: (stats) => {
 			// 按本地日期检查最近 7 天每天都有练习记录

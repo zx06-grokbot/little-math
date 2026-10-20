@@ -32,12 +32,12 @@
 			const p = problem as any;
 			// 对于有余数除法，根据填空位置显示
 			if (p.blank === 'quotient') {
-				return `商: ${answer}`;
+				return `商 ${answer}`;
 			} else if (p.blank === 'remainder') {
-				return `余数: ${answer}`;
+				return `余数 ${answer}`;
 			} else {
 				// both - 但这是旧数据，无法确定是商还是余数
-				return `${answer} (商或余数)`;
+				return `${answer}`;
 			}
 		}
 
@@ -50,7 +50,7 @@
 	}
 
 	function handleClear() {
-		if (confirm('确定要清空所有错题吗？')) {
+		if (confirm('真的要把错题都清掉吗？')) {
 			clearWrongRecords();
 			records = [];
 		}
@@ -70,321 +70,141 @@
 	<title>错题本 - 小小数学家</title>
 </svelte:head>
 
-<div class="wrong-book-page">
-	<header>
-		<a href="/" class="back-link">← 返回首页</a>
-		<h1>📕 错题本</h1>
-	</header>
-
-	<main>
-		{#if records.length === 0}
-			<div class="empty" data-testid="wrong-book-empty">
-				<div class="emoji">🎉</div>
-				<p>太棒了！没有错题记录</p>
-				<a href="/practice" class="start-link">去练习</a>
-			</div>
-		{:else}
-			<div class="actions">
-				<button class="review-btn" onclick={handleReview} data-testid="wrong-book-review">
-					📝 错题复习 ({records.length}题)
-				</button>
-				<button class="clear-btn" onclick={handleClear}>🗑️ 清空</button>
-			</div>
-
-			<div class="records-list">
-				{#each records.slice().reverse() as record}
-					<div class="record-card" data-testid="wrong-record">
+<div class="wrong-book-page list-page ui-page">
+	<h1 class="ui-page-title">📕 错题本</h1>
+	<p class="sub">做错的题会住在这里，再练一练就会啦</p>
+	{#if records.length === 0}
+		<div class="empty ui-card" data-testid="wrong-book-empty">
+			<div class="emoji" aria-hidden="true">🎉</div>
+			<p>太棒啦！这里还没有错题</p>
+			<a href="/practice" class="ui-btn ui-btn-primary ui-btn-big">🎯 去做题</a>
+		</div>
+	{:else}
+		<div class="actions">
+			<button class="grow ui-btn ui-btn-primary ui-btn-big" onclick={handleReview} data-testid="wrong-book-review">
+				💪 再练一遍（{records.length} 道）
+			</button>
+			<button class="ui-btn ui-btn-quiet ui-btn-big" onclick={handleClear}>🗑️ 全部清掉</button>
+		</div>
+		<div class="records-list">
+			{#each records.slice().reverse() as record}
+				<div class="record-card ui-card" data-testid="wrong-record">
+					<div class="record-main">
 						<div class="problem">{formatProblem(record.problem)}</div>
 						<div class="answers">
-							<span class="wrong">你的答案: {formatAnswer(record.wrongAnswer, record.problem)}</span>
-							<span class="correct">正确答案: {formatAnswer(record.correctAnswer, record.problem)}</span>
+							<span class="wrong">你写的：{formatAnswer(record.wrongAnswer, record.problem)}</span>
+							<span class="correct">正确答案：{formatAnswer(record.correctAnswer, record.problem)}</span>
 						</div>
 						<div class="meta">
-							<span class="date">{formatDate(record.timestamp)}</span>
-							<span class="review-count">复习次数: {record.reviewCount}</span>
-							<button class="remove-btn" onclick={() => handleRemove(record.timestamp)}>删除</button>
+							<span class="date">📅 {formatDate(record.timestamp)}</span>
+							<span class="review-count">🔁 练过 {record.reviewCount} 次</span>
 						</div>
 					</div>
-				{/each}
-			</div>
-		{/if}
-	</main>
+					<button class="remove-btn ui-btn ui-btn-quiet" onclick={() => handleRemove(record.timestamp)} aria-label="学会了，删掉这道">✔ 学会了</button>
+				</div>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
-	.wrong-book-page {
-		min-height: 100vh;
-		background: linear-gradient(180deg, #fff5f5, #ffe8cc);
-		font-family: 'Comic Sans MS', cursive;
+	.list-page {
+		padding-top: 0.5rem;
+		padding-bottom: 2.5rem;
 	}
-	header {
-		background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-		color: white;
-		padding: 1rem 2rem;
-		display: flex;
-		align-items: center;
-		gap: 2rem;
-	}
-	.back-link {
-		color: white;
-		text-decoration: none;
-	}
-	h1 {
-		margin: 0;
-		font-size: 1.5rem;
-	}
-	main {
-		padding: 2rem;
-		max-width: 800px;
-		margin: 0 auto;
+	.sub {
+		margin: -0.5rem 0 1.25rem;
+		text-align: center;
+		color: var(--c-muted);
+		font-size: 1.15rem;
 	}
 	.empty {
 		text-align: center;
-		padding: 4rem 2rem;
-		background: white;
-		border-radius: 20px;
+		padding: 2.75rem 1.5rem 2.5rem;
 	}
 	.empty .emoji {
-		font-size: 4rem;
+		font-size: 4.5rem;
+		line-height: 1.1;
 	}
 	.empty p {
-		color: #666;
-		font-size: 1.25rem;
+		margin: 0.75rem 0 0;
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: var(--c-text);
 	}
-	.start-link {
-		display: inline-block;
-		margin-top: 1rem;
-		padding: 0.75rem 2rem;
-		background: linear-gradient(135deg, #51cf66, #20c997);
-		color: white;
+	.empty .ui-btn {
+		margin-top: 1.5rem;
+		min-width: 11rem;
 		text-decoration: none;
-		border-radius: 12px;
 	}
 	.actions {
 		display: flex;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
+		gap: 0.9rem;
+		margin-bottom: 1.25rem;
 	}
-	.review-btn {
-		flex: 1;
-		padding: 1rem;
-		font-size: 1.25rem;
-		background: linear-gradient(135deg, #5c7cfa, #845ef7);
-		color: white;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		font-family: inherit;
-	}
-	.clear-btn {
-		padding: 1rem 1.5rem;
-		font-size: 1rem;
-		background: #f1f3f4;
-		color: #666;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		font-family: inherit;
+	.actions .grow {
+		flex: 1 1 auto;
 	}
 	.records-list {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.9rem;
 	}
 	.record-card {
-		background: white;
-		border-radius: 12px;
-		padding: 1rem 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.1rem 1rem 1.4rem;
+	}
+	.record-main {
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 	.problem {
-		font-size: 1.5rem;
-		color: #333;
-		margin-bottom: 0.5rem;
+		font-size: 1.7rem;
+		font-weight: 700;
+		color: var(--c-text);
+		font-variant-numeric: tabular-nums;
+		overflow-wrap: anywhere;
 	}
 	.answers {
 		display: flex;
-		gap: 2rem;
-		font-size: 0.9rem;
+		flex-wrap: wrap;
+		gap: 0.25rem 1.5rem;
+		margin-top: 0.35rem;
+		font-size: 1.15rem;
 	}
 	.wrong {
-		color: #ff6b6b;
+		color: var(--c-danger);
 	}
 	.correct {
-		color: #51cf66;
+		color: var(--c-success);
+		font-weight: 700;
 	}
 	.meta {
 		display: flex;
-		gap: 1rem;
-		margin-top: 0.75rem;
-		font-size: 0.8rem;
-		color: #999;
-		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
+		margin-top: 0.4rem;
+		font-size: 0.95rem;
+		color: var(--c-muted);
 	}
 	.remove-btn {
-		margin-left: auto;
-		padding: 0.25rem 0.75rem;
-		background: #fee;
-		color: #ff6b6b;
-		border: 1px solid #fcc;
-		border-radius: 6px;
-		cursor: pointer;
-		font-size: 0.8rem;
+		flex: 0 0 auto;
+		min-width: 48px;
+		padding: 0 1rem;
+		font-size: 1.05rem;
 	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		header {
-			padding: 0.875rem 1.5rem;
-			gap: 1.5rem;
-		}
-
-		.back-link {
-			font-size: 0.9rem;
-		}
-
-		h1 {
-			font-size: 1.25rem;
-		}
-
-		main {
-			padding: 1.5rem;
-			max-width: 100%;
-		}
-
-		.empty {
-			padding: 3rem 1.5rem;
-			border-radius: 16px;
-		}
-
-		.empty .emoji {
-			font-size: 3rem;
-		}
-
-		.empty p {
-			font-size: 1.1rem;
-		}
-
-		.start-link {
-			padding: 0.625rem 1.5rem;
-			font-size: 1rem;
-		}
-
-		.actions {
-			gap: 0.75rem;
-			margin-bottom: 1.25rem;
-		}
-
-		.review-btn {
-			padding: 0.875rem;
-			font-size: 1.1rem;
-		}
-
-		.clear-btn {
-			padding: 0.875rem 1.25rem;
-			font-size: 0.9rem;
-		}
-
-		.record-card {
-			padding: 0.875rem 1.25rem;
-		}
-
-		.problem {
-			font-size: 1.25rem;
-		}
-
-		.answers {
-			gap: 1.5rem;
-			font-size: 0.85rem;
-		}
-
-		.meta {
-			gap: 0.75rem;
-			font-size: 0.75rem;
-			flex-wrap: wrap;
-		}
-
-		.remove-btn {
-			margin-left: 0;
-			padding: 0.25rem 0.5rem;
-			font-size: 0.75rem;
-		}
-	}
-
-	@media (max-width: 480px) {
-		header {
-			padding: 0.75rem 1rem;
-			gap: 1rem;
-		}
-
-		.back-link {
-			font-size: 0.85rem;
-		}
-
-		h1 {
-			font-size: 1.1rem;
-		}
-
-		main {
-			padding: 1rem;
-		}
-
-		.empty {
-			padding: 2rem 1rem;
-			border-radius: 12px;
-		}
-
-		.empty .emoji {
-			font-size: 2.5rem;
-		}
-
-		.empty p {
-			font-size: 1rem;
-		}
-
-		.start-link {
-			padding: 0.5rem 1.25rem;
-			font-size: 0.9rem;
-		}
-
+	@media (max-width: 560px) {
 		.actions {
 			flex-direction: column;
-			gap: 0.5rem;
-			margin-bottom: 1rem;
 		}
-
-		.review-btn {
-			padding: 0.75rem;
-			font-size: 1rem;
-		}
-
-		.clear-btn {
-			padding: 0.75rem;
-			font-size: 0.85rem;
-		}
-
 		.record-card {
-			padding: 0.75rem 1rem;
+			padding: 0.9rem 0.8rem 0.9rem 1rem;
+			gap: 0.6rem;
 		}
-
 		.problem {
-			font-size: 1.1rem;
-		}
-
-		.answers {
-			gap: 1rem;
-			font-size: 0.8rem;
-			flex-direction: column;
-		}
-
-		.meta {
-			gap: 0.5rem;
-			font-size: 0.7rem;
-		}
-
-		.remove-btn {
-			padding: 0.2rem 0.5rem;
-			font-size: 0.7rem;
+			font-size: 1.45rem;
 		}
 	}
 </style>

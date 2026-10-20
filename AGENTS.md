@@ -29,7 +29,7 @@ src/
 │   │   └── remainder.ts  # 有余数除法生成器
 │   ├── config/
 │   │   ├── presets.ts    # 年级预设配置
-│   │   └── themes.ts     # 主题配置
+│   │   └── uiThemes.ts   # 三个界面主题（糖果/森林/海洋）
 │   ├── components/       # UI 组件
 │   │   ├── ConfigPanel.svelte      # 左侧配置面板
 │   │   ├── ExerciseSheet.svelte    # 练习题显示/打印
@@ -42,7 +42,7 @@ src/
 │   │   ├── RemainderInput.svelte   # 余数答案输入
 │   │   ├── Timer.svelte            # 计时器
 │   │   ├── ProgressChart.svelte    # 进度图表
-│   │   ├── ThemeSelector.svelte    # 主题选择器
+│   │   ├── UiThemeSwitcher.svelte  # 换颜色（主题切换）
 │   │   └── AchievementToast.svelte # 成就提示
 │   ├── actions/          # Svelte actions
 │   │   └── track.ts      # 统计埋点 action
@@ -148,13 +148,15 @@ interface WrongRecord {
 
 ## UI 设计规范
 
-- **字体**：Comic Sans MS（儿童友好）
-- **配色**（默认主题）：
-  - 标题：#ff6b6b（珊瑚红）
-  - 数字：#5c7cfa（蓝色）
-  - 运算符：#ff922b（橙色）
-  - 结果：#51cf66（绿色）
-- **装饰**：使用 emoji（🌟 🧮 ✨）增加趣味性
+- **面向 5 岁左右的小朋友**：字大、按钮 ≥48px、颜色柔和、少字多图标；文案短、口语、温柔鼓励（避免「生成试卷」「配置」「题型参数」这类大人用语）
+- **三个主题**：`src/lib/styles/ui-themes.css` + `src/lib/config/uiThemes.ts`
+  - 🍬糖果（id `a`，默认）/ 🌳森林（`b`）/ 🌊海洋（`c`）；顶部「🎨」切换，或网址 `?theme=a|b|c`，也认 `candy|forest|ocean` 与中文名；记在 localStorage `little-math-ui-theme`
+  - 旧值（如 `classic`）或无效值一律回到第一个主题；`src/app.html` 的内联脚本在首屏前设置 `html[data-ui-theme]`
+  - 覆盖所有页面：顶栏 `AppHeader`（导航 + 换颜色）在 `+layout.svelte`，全站通用的 `--c-*` 语义色和 `.ui-page / .ui-card / .ui-btn / .ui-input` 定义在 ui-themes.css
+  - 新增样式请用 CSS 变量，三个主题都要定义（`:root` 即糖果，森林 / 海洋覆盖）
+  - 不改横式数字槽 / 括号 / 竖式对齐逻辑，只改颜色、底色、圆角、间距和基准字号（整页统一字号仍由 `--fit-line-size` 决定）
+  - 打印、导出 PDF 一律黑字白底（`@media print` 与导出时的 `html[data-ink=print]`），没有单独的「打印主题」
+  - `E2E_UI_THEME=a|b|c pnpm test:e2e` 可在指定主题下跑整套 e2e
 - **填空括号**：使用 `\u00a0`（不换行空格）保持宽度
 
 ## 打印相关

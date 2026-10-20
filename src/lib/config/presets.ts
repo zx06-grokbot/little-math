@@ -23,7 +23,7 @@ export const GRADE_PRESETS: Record<string, GradePreset> = {
 		operations: ['add', 'sub', 'mul', 'div']
 	},
 	custom: {
-		label: '自定义',
+		label: '我自己选',
 		range: { min: 1, max: 100 },
 		operations: ['add', 'sub']
 	}

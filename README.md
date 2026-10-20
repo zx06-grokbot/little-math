@@ -45,7 +45,7 @@
 
 ### 🎨 其他特性
 
-- **主题切换**：经典、卡通、春节、星空、自然等主题
+- **三种颜色**：🍬糖果 / 🌳森林 / 🌊海洋，覆盖所有页面；打印和 PDF 始终黑白省墨
 - **配置持久化**：自动保存上次配置
 - **儿童化设计**：彩色界面、可爱字体、趣味装饰
 - **打印友好**：保留彩色样式，背景覆盖整页
@@ -149,7 +149,7 @@ src/
 │   │   └── remainder.ts  # 有余数除法生成器
 │   ├── config/
 │   │   ├── presets.ts    # 年级预设配置
-│   │   └── themes.ts     # 主题配置
+│   │   └── uiThemes.ts   # 三个界面主题（糖果/森林/海洋）
 │   ├── components/       # UI 组件
 │   │   ├── ConfigPanel.svelte      # 左侧配置面板
 │   │   ├── ExerciseSheet.svelte    # 练习题显示/打印
@@ -162,7 +162,7 @@ src/
 │   │   ├── RemainderInput.svelte   # 余数答案输入
 │   │   ├── Timer.svelte            # 计时器
 │   │   ├── ProgressChart.svelte    # 进度图表
-│   │   ├── ThemeSelector.svelte    # 主题选择器
+│   │   ├── UiThemeSwitcher.svelte  # 换颜色（主题切换）
 │   │   └── AchievementToast.svelte # 成就提示
 │   ├── actions/          # Svelte actions
 │   │   └── track.ts      # 统计埋点 action

@@ -2,7 +2,6 @@
 	import type { AnyProblem, Problem } from '$lib/types';
 	import { OP_SYMBOLS } from '$lib/types';
 	import { zh } from '$lib/i18n/zh';
-	import { getThemeById } from '$lib/config/themes';
 	import { isChain, isCompare, isMakeTarget, isRemainder, exprText, REMAINDER_SEP } from '$lib/format';
 	import { fitSheetText } from '$lib/actions/fitText';
 
@@ -17,7 +16,6 @@
 		subtitle?: string;
 		studentName?: string;
 		showDate?: boolean;
-		theme?: string;
 	}
 
 	let {
@@ -29,12 +27,10 @@
 		title,
 		subtitle = '',
 		studentName = '',
-		showDate = true,
-		theme = 'default'
+		showDate = true
 	}: Props = $props();
 
 	const t = zh.print;
-	const currentTheme = $derived(getThemeById(theme));
 
 	function formatDate(): string {
 		const now = new Date();
@@ -129,16 +125,13 @@
 	const hDigits = $derived(Math.max(2, ...problems.map(maxDigits)));
 </script>
 
-<div
-	class="sheet-container"
-	style="--theme-primary: {currentTheme.colors.primary}; --theme-secondary: {currentTheme.colors.secondary}; --theme-accent: {currentTheme.colors.accent}; --theme-background: {currentTheme.colors.background}; --theme-border: {currentTheme.colors.border};"
->
+<div class="sheet-container">
 	{#each pages as page, pageIndex}
 		<section class="page" class:answer-page={showAnswers} data-testid={showAnswers ? 'answer-page' : 'sheet-page'}>
 			<header class="page-header">
 				<h1>{title}{showAnswers ? ` - ${t.answerTitle}` : ''}</h1>
 				{#if subtitle}
-					<div class="subtitle">{subtitle}{pages.length > 1 ? ` · 第 ${pageIndex + 1}/${pages.length} 页` : ''}</div>
+					<div class="subtitle">{subtitle}{showAnswers ? '' : ' · 细心算，你能行！'}{pages.length > 1 ? ` · 第 ${pageIndex + 1}/${pages.length} 张` : ''}</div>
 				{/if}
 				{#if !showAnswers}
 					<div class="info-row">
@@ -228,14 +221,15 @@
 	.page {
 		width: 210mm;
 		height: 297mm;
-		padding: 11mm 13mm 10mm;
+		padding: var(--s-page-pad);
 		box-sizing: border-box;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(180deg, var(--theme-background) 0%, #ffffff 60%);
-		margin: 0 auto 16px;
-		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+		background: var(--s-page-bg);
+		margin: 0 auto var(--s-page-gap);
+		box-shadow: var(--s-page-shadow);
+		border-radius: var(--s-page-radius);
 		break-inside: avoid;
 		page-break-inside: avoid;
 		position: relative;
@@ -250,28 +244,29 @@
 	}
 
 	.page-header h1 {
-		font-size: 26px;
+		font-size: var(--s-title-size);
 		line-height: 1.25;
-		font-weight: 700;
+		font-weight: var(--s-title-weight, 700);
+		font-family: var(--s-title-font, inherit);
 		margin: 0 0 1.5mm;
-		color: var(--theme-primary);
-		text-shadow: 2px 2px 0 var(--theme-secondary);
-		letter-spacing: 0.08em;
+		color: var(--s-title-fg);
+		text-shadow: var(--s-title-shadow);
+		letter-spacing: var(--s-title-ls);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
 
 	.page-header h1::before {
-		content: '🌟 ';
+		content: var(--s-title-before);
 	}
 	.page-header h1::after {
-		content: ' 🌟';
+		content: var(--s-title-after);
 	}
 
 	.subtitle {
-		font-size: 13px;
-		color: #8a7a6a;
+		font-size: var(--s-sub-size);
+		color: var(--s-sub-fg);
 		margin-bottom: 2mm;
 		white-space: nowrap;
 		overflow: hidden;
@@ -281,9 +276,9 @@
 	.info-row {
 		display: flex;
 		justify-content: center;
-		gap: 2.5rem;
-		font-size: 16px;
-		color: #5a4a3a;
+		gap: var(--s-info-gap, 2.5rem);
+		font-size: var(--s-info-size);
+		color: var(--s-info-fg);
 	}
 	.info-item {
 		display: flex;
@@ -291,19 +286,19 @@
 		gap: 0.5rem;
 	}
 	.info-label {
-		color: #ff9f43;
+		color: var(--s-info-label);
 		font-weight: 600;
 	}
 	.info-line {
 		display: inline-block;
-		width: 5rem;
-		border-bottom: 2px dashed #ffc078;
+		width: var(--s-info-line-w);
+		border-bottom: var(--s-info-line);
 	}
 	.info-line.short {
-		width: 3rem;
+		width: var(--s-info-line-w-short);
 	}
 	.info-value {
-		color: #5c7cfa;
+		color: var(--s-info-value);
 		font-weight: 600;
 	}
 
@@ -314,8 +309,8 @@
 		display: grid;
 		grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
 		grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
-		column-gap: 6mm;
-		border-top: 1px dashed #f1d9b5;
+		column-gap: var(--s-col-gap);
+		border-top: var(--s-grid-rule);
 		padding-top: 2mm;
 	}
 
@@ -323,6 +318,8 @@
 		min-width: 0;
 		min-height: 0;
 		overflow: hidden;
+		/* 行底细线用 inset 阴影画，不占布局尺寸（不影响行高 / 字号计算） */
+		box-shadow: var(--s-cell-rule, none);
 		break-inside: avoid;
 		page-break-inside: avoid;
 	}
@@ -337,24 +334,24 @@
 		display: inline-block;
 		white-space: nowrap;
 		/* --fit-line-size 由 fitSheetText 在整页需要缩小时统一注入 */
-		font-size: var(--fit-line-size, 21px);
+		font-size: var(--fit-line-size, var(--s-line-3));
 		line-height: 1.3;
-		color: #4a4a4a;
+		color: var(--s-ink);
 		font-variant-numeric: tabular-nums;
 	}
 	.cols-2 .line {
-		font-size: var(--fit-line-size, 26px);
+		font-size: var(--fit-line-size, var(--s-line-2));
 	}
 	.cols-3 .line.long {
-		font-size: var(--fit-line-size, 18px);
+		font-size: var(--fit-line-size, var(--s-line-3-long));
 	}
 	.cols-2 .line.long {
-		font-size: var(--fit-line-size, 23px);
+		font-size: var(--fit-line-size, var(--s-line-2-long));
 	}
 
 	.problem-number {
 		display: inline-block;
-		color: #ff6b6b;
+		color: var(--s-qno);
 		width: 2.75em;
 		min-width: 2.75em;
 		text-align: right;
@@ -371,29 +368,29 @@
 		vertical-align: baseline;
 	}
 	.tk-num {
-		color: #5c7cfa;
+		color: var(--s-num);
 		font-weight: 600;
 	}
 	.tk-op {
-		color: #ff922b;
+		color: var(--s-op);
 		font-weight: 700;
 		margin: 0 0.3em;
 	}
 	.tk-blank {
-		color: #51cf66;
+		color: var(--s-blank);
 		font-weight: 600;
 	}
 	.tk-ans {
-		color: #e8590c;
+		color: var(--s-ans);
 		font-weight: 700;
 	}
 	.tk-sep {
-		color: #999;
+		color: var(--s-sep);
 		margin: 0 0.35em;
 		letter-spacing: -0.05em;
 	}
 	.tk-cmp {
-		color: #ff922b;
+		color: var(--s-cmp);
 		font-weight: 700;
 		font-size: 1.15em;
 		margin: 0 0.5em;
@@ -437,7 +434,7 @@
 		top: 0;
 		width: 0.7em;
 		text-align: center;
-		color: #51cf66;
+		color: var(--s-paren);
 		font-weight: 600;
 		pointer-events: none;
 	}
@@ -450,13 +447,13 @@
 		top: 0;
 		width: 0.7em;
 		text-align: center;
-		color: #51cf66;
+		color: var(--s-paren);
 		font-weight: 600;
 		pointer-events: none;
 	}
 	.aligned .tk-ans::before,
 	.aligned .tk-ans::after {
-		color: #e8590c;
+		color: var(--s-ans);
 	}
 	.aligned .problem-number {
 		/* 括号已在槽内，题号只需常规间距 */
@@ -506,12 +503,12 @@
 		gap: 2mm;
 		padding-top: 3mm;
 		font-family: 'Courier New', 'DejaVu Sans Mono', ui-monospace, monospace;
-		font-size: 24px;
+		font-size: var(--s-v-size);
 		font-variant-numeric: tabular-nums;
 	}
 	.v-cell .problem-number {
 		font-family: 'Comic Sans MS', 'PingFang SC', cursive, sans-serif;
-		font-size: 16px;
+		font-size: var(--s-v-qno-size);
 		min-width: 1.8em;
 		margin-top: 0.2em;
 	}
@@ -520,7 +517,7 @@
 		flex-direction: column;
 		align-items: stretch;
 		width: calc((var(--len) + 1.6) * 1ch);
-		color: #4a4a4a;
+		color: var(--s-ink);
 		font-weight: 600;
 	}
 	.v-row {
@@ -534,7 +531,7 @@
 		min-width: 1.2ch;
 		text-align: center;
 		margin-right: auto;
-		color: #ff922b;
+		color: var(--s-op);
 	}
 	.v-num {
 		display: inline-block;
@@ -546,19 +543,19 @@
 	}
 	.v-line {
 		height: 2px;
-		background: #333;
+		background: var(--s-rule-ink);
 		margin: 0.15em 0 0.25em;
 	}
 	.v-box {
 		width: calc(var(--len) * 1ch);
 		min-width: calc(var(--len) * 1ch);
 		height: 1.2em;
-		border: 1.5px dashed #b0b0b0;
+		border: 1.5px dashed var(--s-vbox);
 		border-radius: 4px;
 		box-sizing: border-box;
 	}
 	.v-ans {
-		color: #e8590c;
+		color: var(--s-ans);
 	}
 
 	/* 除法竖式（长除法） */
@@ -566,7 +563,7 @@
 		display: inline-flex;
 		flex-direction: column;
 		font-weight: 600;
-		color: #4a4a4a;
+		color: var(--s-ink);
 		font-variant-numeric: tabular-nums;
 	}
 	.ld-q {
@@ -604,8 +601,8 @@
 		box-sizing: border-box;
 	}
 	.ld-dividend {
-		border-top: 2px solid #333;
-		border-left: 2px solid #333;
+		border-top: 2px solid var(--s-rule-ink);
+		border-left: 2px solid var(--s-rule-ink);
 		border-top-left-radius: 0.6em 1em;
 		padding: 0.15em 0.3em 0.1em 0.5em;
 	}
@@ -631,6 +628,7 @@
 		.page {
 			margin: 0 !important;
 			box-shadow: none !important;
+			border-radius: 0 !important;
 			break-after: auto;
 			page-break-after: auto;
 			-webkit-print-color-adjust: exact !important;

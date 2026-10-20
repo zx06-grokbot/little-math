@@ -7,7 +7,7 @@ async function startPractice(
 	await page.goto('/practice');
 	if (opts.mode) await page.getByTestId('practice-mode').selectOption(opts.mode);
 	if (opts.count != null) {
-		await page.locator('label', { hasText: '题数' }).locator('input').fill(String(opts.count));
+		await page.locator('label', { hasText: '做几道' }).locator('input').fill(String(opts.count));
 	}
 	if (opts.ops) {
 		for (const label of ['加法', '减法', '乘法', '除法']) {
@@ -36,7 +36,7 @@ test.describe('B. 在线练习', () => {
 		await page.locator('.answer-input input').fill('99999');
 		await page.locator('.answer-input input').press('Enter');
 		await expect(page.getByTestId('feedback')).toContainText(/正确|错误|答/);
-		await page.getByRole('button', { name: '查看结果' }).click();
+		await page.getByRole('button', { name: /看看成绩/ }).click();
 		await expect(page.getByTestId('practice-result')).toBeVisible();
 		await expect(page.getByTestId('result-accuracy')).toBeVisible();
 		await expect(page.getByTestId('practice-result')).toContainText(/用时|秒|分/);
@@ -126,7 +126,7 @@ test.describe('D. 收藏', () => {
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
 		await page.locator('.answer-input input').fill('99999');
 		await page.locator('.answer-input input').press('Enter');
-		await page.getByRole('button', { name: '查看结果' }).click();
+		await page.getByRole('button', { name: /看看成绩/ }).click();
 		await page.getByTestId('favorite-btn').first().click();
 		const n = await page.evaluate(() => JSON.parse(localStorage.getItem('little-math-favorites') || '[]').length);
 		expect(n).toBe(1);

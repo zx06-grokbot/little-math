@@ -44,9 +44,9 @@ export function generateWorksheet(config: ExerciseConfig, rng: Rng = defaultRng)
 	}
 	let notice: string | null = null;
 	if (r.problems.length === 0) {
-		issues.push({ field: 'range', message: '当前设置下生成不了题目，请扩大数字范围或更换运算' });
+		issues.push({ field: 'range', message: '这样出不了题，把数字范围放大一点或换一种题试试' });
 	} else if (r.uniqueCount < r.requested) {
-		notice = `当前设置下只有 ${r.uniqueCount} 道不同的题，已重复使用部分题目凑满 ${r.requested} 道。扩大数字范围可以得到更多不同的题。`;
+		notice = `只有 ${r.uniqueCount} 道不一样的题，有些题会再出现一次（凑满 ${r.requested} 道）。把数字范围放大，题目会更多。`;
 	}
 	return { ...r, notice, issues };
 }
@@ -70,15 +70,15 @@ export function autoTitle(config: ExerciseConfig): string {
 	const { min, max } = config.range ?? { min: 0, max: 0 };
 	switch (config.problemMode) {
 		case 'makeTarget':
-			return `凑${config.makeTargetValue}练习`;
+			return `凑${config.makeTargetValue}游戏`;
 		case 'remainder':
 			return `${rangeText(min, max)}有余数除法`;
 		case 'chain':
-			return `${rangeText(min, max)}${opsText(config.operations)}连续运算`;
+			return `${rangeText(min, max)}${opsText(config.operations)}连着算`;
 		case 'compare':
-			return `${rangeText(min, max)}${opsText(config.operations)}比较大小`;
+			return `${rangeText(min, max)}${opsText(config.operations)}比大小`;
 		default:
-			return `${rangeText(min, max)}${opsText(config.operations)}练习`;
+			return `${rangeText(min, max)}${opsText(config.operations)}小练习`;
 	}
 }
 
@@ -87,11 +87,11 @@ export function settingsSummary(config: ExerciseConfig): string {
 	const { min, max } = config.range;
 	switch (config.problemMode) {
 		case 'makeTarget':
-			return `凑 ${config.makeTargetValue}`;
+			return `把两个数凑成 ${config.makeTargetValue}`;
 		case 'remainder':
-			return `被除数 ${min}～${max} · 除数 2～9`;
+			return `被除数 ${min}～${max} · 除数 2～9 · 记得写余数`;
 		case 'chain':
-			return `数字 ${min}～${max} · ${opsText(config.operations)} · ${config.chainLength} 个数 · 先乘除后加减`;
+			return `数字 ${min}～${max} · ${config.chainLength} 个数连着算 · 先乘除，再加减`;
 		default:
 			return `数字 ${min}～${max} · ${opsText(config.operations)}${config.tableMulDiv && config.operations.some((o) => o === 'mul' || o === 'div') ? ' · 表内乘除' : ''}`;
 	}

@@ -1,8 +1,29 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-ui-theme="a">
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.5, user-scalable=yes, viewport-fit=cover" />
+		<script>
+			/* 界面风格：?theme=a|b|c（或 candy/forest/ocean）优先，其次本地记忆；其它值（含旧的 classic）回到糖果(a)。首屏前写到 <html data-ui-theme>（见 $lib/config/uiThemes.ts） */
+			(function () {
+				var t = 'a';
+				try {
+					var k = 'little-math-ui-theme';
+					var ok = /^(a|b|c)$/;
+					var alias = { candy: 'a', forest: 'b', ocean: 'c', '糖果': 'a', '森林': 'b', '海洋': 'c' };
+					var norm = function (v) {
+						v = (v || '').trim().toLowerCase();
+						return alias[v] || v;
+					};
+					var q = norm(new URLSearchParams(location.search).get('theme'));
+					var saved = norm(localStorage.getItem(k));
+					// 网址里写了 theme 就以它为准（非法值回糖果）；没写才用本地记忆
+					t = q ? (ok.test(q) ? q : 'a') : ok.test(saved) ? saved : 'a';
+					localStorage.setItem(k, t);
+				} catch (e) {}
+				document.documentElement.setAttribute('data-ui-theme', t);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

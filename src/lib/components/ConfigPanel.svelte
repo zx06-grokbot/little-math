@@ -8,7 +8,6 @@
 	import { REMAINDER_DIVISOR_MAX, REMAINDER_DIVISOR_MIN } from '$lib/generators/remainder';
 	import { zh } from '$lib/i18n/zh';
 	import { track } from '$lib/actions/track';
-	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
 
 	const MAKE_TARGET_OPTIONS: MakeTargetValue[] = [10, 20, 100];
 
@@ -21,8 +20,6 @@
 		onPrint: () => void;
 		onExportPdf?: () => void;
 		isExportingPdf?: boolean;
-		theme: string;
-		onThemeChange: (theme: string) => void;
 	}
 
 	let {
@@ -33,9 +30,7 @@
 		onGenerate,
 		onPrint,
 		onExportPdf,
-		isExportingPdf = false,
-		theme,
-		onThemeChange
+		isExportingPdf = false
 	}: Props = $props();
 
 	const t = zh.config;
@@ -81,23 +76,19 @@
 
 	const rangeHints = $derived.by(() => {
 		if (config.problemMode === 'remainder')
-			return [`被除数在范围内；除数 ${REMAINDER_DIVISOR_MIN}～${REMAINDER_DIVISOR_MAX}；余数小于除数`];
+			return [`除数 ${REMAINDER_DIVISOR_MIN}～${REMAINDER_DIVISOR_MAX}，余数比除数小`];
 		if (config.problemMode === 'chain')
-			return ['按「先乘除、后加减」计算', '每一步的中间结果和答案都在 0～最大值 之间，除法都能整除'];
+			return ['先算乘除，再算加减', '每一步都不超过最大的数，除法都能除尽'];
 		return config.operations.map((op) => RANGE_RULE_TEXT[op]);
 	});
 </script>
 
 <div class="config-panel">
-	<h2>配置</h2>
-
-	<div class="config-section">
-		<ThemeSelector selectedTheme={theme} onChange={onThemeChange} />
-	</div>
+	<h2>出题啦</h2>
 
 	<div class="config-section">
 		<label>
-			{t.gradePreset}
+			<span class="lbl"><span class="ico" aria-hidden="true">🎓</span>{t.gradePreset}</span>
 			<select bind:value={config.gradePreset} onchange={handlePresetChange} data-testid="preset">
 				{#each Object.entries(GRADE_PRESETS) as [key, preset]}
 					<option value={key}>{preset.label}</option>
@@ -108,7 +99,7 @@
 
 	<div class="config-section">
 		<label>
-			{t.problemMode}
+			<span class="lbl"><span class="ico" aria-hidden="true">🧩</span>{t.problemMode}</span>
 			<select bind:value={config.problemMode} data-testid="mode">
 				<option value="normal">{t.normalMode}</option>
 				<option value="makeTarget">{t.makeTargetMode}</option>
@@ -122,7 +113,7 @@
 	{#if config.problemMode === 'remainder'}
 		<div class="config-section">
 			<label>
-				{t.remainderBlank}
+				<span class="lbl"><span class="ico" aria-hidden="true">❓</span>{t.remainderBlank}</span>
 				<select bind:value={config.remainderBlank} data-testid="remainder-blank">
 					<option value="quotient">{t.remainderBlankQuotient}</option>
 					<option value="remainder">{t.remainderBlankRemainder}</option>
@@ -135,7 +126,7 @@
 	{#if config.problemMode === 'chain'}
 		<div class="config-section">
 			<label>
-				{t.chainLength}
+				<span class="lbl"><span class="ico" aria-hidden="true">🔗</span>{t.chainLength}</span>
 				<select bind:value={config.chainLength} data-testid="chain-length">
 					<option value={3}>{t.chainLength3}</option>
 					<option value={4}>{t.chainLength4}</option>
@@ -147,7 +138,7 @@
 	{#if config.problemMode === 'makeTarget'}
 		<div class="config-section">
 			<label>
-				{t.makeTargetValue}
+				<span class="lbl"><span class="ico" aria-hidden="true">🎯</span>{t.makeTargetValue}</span>
 				<select bind:value={config.makeTargetValue} data-testid="make-target">
 					{#each MAKE_TARGET_OPTIONS as value}
 						<option {value}>凑 {value}</option>
@@ -160,22 +151,22 @@
 	<div class="config-section">
 		{#if verticalSupported}
 			<label>
-				{t.exerciseType}
+				<span class="lbl"><span class="ico" aria-hidden="true">📐</span>{t.exerciseType}</span>
 				<select bind:value={config.isVertical} data-testid="vertical">
 					<option value={false}>{t.horizontal}</option>
 					<option value={true}>{t.vertical}</option>
 				</select>
 			</label>
 		{:else}
-			<span class="label">{t.exerciseType}</span>
-			<p class="hint">该模式只支持横式</p>
+			<span class="label"><span class="ico" aria-hidden="true">📐</span>{t.exerciseType}</span>
+			<p class="hint">这个只能横着写</p>
 		{/if}
 	</div>
 
 	{#if !layout.vertical}
 		<div class="config-section">
 			<label>
-				{t.columns}
+				<span class="lbl"><span class="ico" aria-hidden="true">🧱</span>{t.columns}</span>
 				<select bind:value={config.columns} data-testid="columns">
 					<option value={2}>{t.columns2}</option>
 					<option value={3}>{t.columns3}</option>
@@ -186,7 +177,7 @@
 
 	{#if showOps}
 		<div class="config-section">
-			<span class="label">{t.operations}</span>
+			<span class="label"><span class="ico" aria-hidden="true">➕</span>{t.operations}</span>
 			<div class="checkbox-group" class:invalid={errorsFor('operations').length > 0}>
 				{#each Object.entries(OP_NAMES) as [op, name]}
 					<label class="checkbox-label">
@@ -204,7 +195,7 @@
 			{#if hasMulDiv}
 				<label class="checkbox-label table-opt">
 					<input type="checkbox" bind:checked={config.tableMulDiv} data-testid="table-muldiv" />
-					乘除只出表内（因数、除数和商不超过 9）
+					只出表内乘除（9 以内）
 				</label>
 			{/if}
 		</div>
@@ -212,7 +203,7 @@
 
 	{#if showRange}
 		<div class="config-section">
-			<span class="label">{config.problemMode === 'remainder' ? '被除数范围' : t.range}</span>
+			<span class="label"><span class="ico" aria-hidden="true">🔢</span>{config.problemMode === 'remainder' ? '被除数多大' : t.range}</span>
 			<div class="range-inputs">
 				<label>
 					{t.rangeMin}
@@ -248,7 +239,7 @@
 
 	{#if config.problemMode === 'normal'}
 		<div class="config-section">
-			<span class="label">{t.blankPosition}</span>
+			<span class="label"><span class="ico" aria-hidden="true">⬜</span>{t.blankPosition}</span>
 			<div class="ratio-inputs">
 				{#each [['first', t.blankFirst], ['second', t.blankSecond], ['result', t.blankResult]] as [pos, name]}
 					<label>
@@ -264,13 +255,13 @@
 					</label>
 				{/each}
 			</div>
-			<p class="hint">三个滑块互不影响，右侧是实际占比{ratioTotal <= 0 ? '（全为 0 时只留空结果）' : ''}</p>
+			<p class="hint">拖一拖，右边是会出现的比例{ratioTotal <= 0 ? '（都为 0 时只空答案）' : ''}</p>
 		</div>
 	{/if}
 
 	<div class="config-section">
 		<label>
-			{t.totalCount}
+			<span class="lbl"><span class="ico" aria-hidden="true">📚</span>{t.totalCount}</span>
 			<input
 				type="number"
 				data-testid="total-count"
@@ -286,7 +277,7 @@
 
 	<div class="config-section">
 		<label>
-			{t.countPerPage}
+			<span class="lbl"><span class="ico" aria-hidden="true">📄</span>{t.countPerPage}</span>
 			<input
 				type="number"
 				data-testid="per-page"
@@ -298,22 +289,22 @@
 			/>
 		</label>
 		{#each errorsFor('countPerPage') as msg}<p class="error" role="alert">{msg}</p>{/each}
-		<p class="hint">当前版式一页 A4 最多 {layout.maxPerPage} 道</p>
+		<p class="hint">一张纸最多 {layout.maxPerPage} 道</p>
 		{#if layoutNote}<p class="note" data-testid="layout-note">{layoutNote}</p>{/if}
 	</div>
 
 	<div class="config-section">
 		<label>
-			{t.customTitle}
+			<span class="lbl"><span class="ico" aria-hidden="true">✏️</span>{t.customTitle}</span>
 			<input type="text" bind:value={config.customTitle} placeholder={autoTitle} maxlength="30" data-testid="custom-title" />
 		</label>
-		<p class="hint">留空则按设置自动生成：{autoTitle}</p>
+		<p class="hint">不写就叫：{autoTitle}</p>
 	</div>
 
 	<div class="config-section">
 		<label>
-			{t.studentName}
-			<input type="text" bind:value={config.studentName} placeholder="请输入姓名" data-testid="student-name" />
+			<span class="lbl"><span class="ico" aria-hidden="true">🙂</span>{t.studentName}</span>
+			<input type="text" bind:value={config.studentName} placeholder="写上名字" data-testid="student-name" />
 		</label>
 	</div>
 
@@ -342,10 +333,10 @@
 				data: { operations: config.operations, gradePreset: config.gradePreset }
 			}}
 		>
-			{zh.buttons.generate}
+			<span class="ico" aria-hidden="true">✨</span>{zh.buttons.generate}
 		</button>
 		<button class="btn secondary" onclick={onPrint} disabled={!canPrint} data-testid="print" use:track={{ type: 'print' }}>
-			{zh.buttons.print}
+			<span class="ico" aria-hidden="true">🖨️</span>{zh.buttons.print}
 		</button>
 		{#if onExportPdf}
 			<button
@@ -355,76 +346,171 @@
 				data-testid="export-pdf"
 				use:track={{ type: 'pdf' }}
 			>
-				{isExportingPdf ? '导出中...' : zh.buttons.exportPdf}
+				<span class="ico" aria-hidden="true">📄</span>{isExportingPdf ? '正在存…' : zh.buttons.exportPdf}
 			</button>
 		{/if}
 	</div>
-	{#if !canPrint}<p class="error center">请先修正上面标红的设置</p>{/if}
+	{#if !canPrint}<p class="error center">把上面红色的地方改一下就好啦</p>{/if}
 </div>
 
 <style>
+	/* 所有 var(--cp-*, 默认值)：默认值即原版样式；界面风格 A/B/C 在 $lib/styles/ui-themes.css 里覆盖 */
 	.config-panel {
-		padding: 1.5rem;
-		background: linear-gradient(180deg, #fff5f5 0%, #fff9db 100%);
-		border-radius: 16px;
+		padding: var(--cp-pad);
+		background: var(--cp-bg);
+		border-radius: var(--cp-radius);
 		height: fit-content;
-		border: 2px solid #ffc078;
-		font-family: 'Comic Sans MS', cursive, sans-serif;
+		border: var(--cp-border);
+		box-shadow: var(--cp-shadow);
+		font-family: var(--cp-font);
+		color: var(--cp-fg);
 	}
 
 	h2 {
-		margin: 0 0 1.5rem;
-		font-size: 1.4rem;
-		color: #ff6b6b;
-		text-align: center;
+		margin: var(--cp-h2-margin);
+		padding-bottom: var(--cp-h2-pb, 0);
+		border-bottom: var(--cp-h2-border, none);
+		font-size: var(--cp-h2-size);
+		font-family: var(--cp-h2-font, inherit);
+		font-weight: var(--cp-h2-weight, bold);
+		letter-spacing: var(--cp-h2-ls, normal);
+		color: var(--cp-h2-fg);
+		text-align: var(--cp-h2-align, center);
 	}
 
 	h2::before {
-		content: '⚙️ ';
+		content: var(--cp-h2-before);
 	}
 
 	.config-section {
-		margin-bottom: 1.25rem;
+		margin-bottom: var(--cp-gap);
 	}
 
 	.config-section > label {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		color: #555;
+		gap: var(--cp-label-gap);
+		font-size: var(--cp-label-size);
+		font-weight: var(--cp-label-weight);
+		color: var(--cp-label-fg);
 	}
 
 	.label {
-		font-size: 0.875rem;
-		color: #555;
+		font-size: var(--cp-label-size);
+		font-weight: var(--cp-label-weight);
+		color: var(--cp-label-fg);
 		display: block;
-		margin-bottom: 0.5rem;
+		margin-bottom: var(--cp-label-gap);
+	}
+
+	.lbl {
+		display: var(--cp-lbl-display);
+		align-items: center;
+	}
+
+	/* 标签 / 按钮前的小图标：原版不显示 */
+	.ico {
+		display: var(--cp-ico-display);
+		align-items: center;
+		justify-content: center;
+		flex: 0 0 auto;
+		width: var(--cp-ico-size);
+		height: var(--cp-ico-size);
+		margin-right: 0.45em;
+		border-radius: var(--cp-ico-radius, 50%);
+		background: var(--cp-ico-bg);
+		font-size: var(--cp-ico-font);
+		line-height: 1;
+		filter: var(--cp-ico-filter, none);
+	}
+	.btn .ico {
+		width: auto;
+		height: auto;
+		background: none;
+		margin-right: 0.4em;
+		filter: var(--cp-btn-ico-filter, none);
 	}
 
 	select,
 	input[type='number'],
 	input[type='text'] {
-		padding: 0.5rem;
-		border: 1px solid #ddd;
-		border-radius: 4px;
-		font-size: 1rem;
+		padding: var(--cp-input-pad);
+		min-height: var(--cp-input-h);
+		border: var(--cp-input-border);
+		border-radius: var(--cp-input-radius);
+		font-size: var(--cp-input-size);
 		width: 100%;
 		box-sizing: border-box;
+		transition:
+			border-color 0.15s,
+			box-shadow 0.15s;
+	}
+	/* 以下只在界面风格 A/B/C 下接管，原版保持浏览器默认（字体 / 颜色 / 焦点） */
+	:global(html[data-ui-theme]) select,
+	:global(html[data-ui-theme]) input[type='number'],
+	:global(html[data-ui-theme]) input[type='text'] {
+		background-color: var(--cp-input-bg);
+		color: var(--cp-input-fg, var(--cp-fg));
+		font-family: inherit;
+	}
+	:global(html[data-ui-theme]) .btn {
+		font-family: inherit;
+	}
+	:global(html[data-ui-theme]) select:focus,
+	:global(html[data-ui-theme]) input[type='number']:focus,
+	:global(html[data-ui-theme]) input[type='text']:focus {
+		outline: none;
+		border-color: var(--cp-focus-border);
+		box-shadow: var(--cp-focus-ring);
+	}
+	input[type='checkbox'],
+	input[type='range'] {
+		accent-color: var(--cp-accent);
+	}
+	input[type='checkbox'] {
+		width: var(--cp-check-size);
+		height: var(--cp-check-size);
+		margin: var(--cp-check-margin);
 	}
 
 	.checkbox-group {
-		display: flex;
+		display: var(--cp-chk-group-display);
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		flex-wrap: wrap;
-		gap: 0.75rem;
+		gap: var(--cp-chk-group-gap);
 	}
 
 	.checkbox-label {
 		display: flex;
 		align-items: center;
 		gap: 0.35rem;
-		font-size: 0.875rem;
+		font-size: var(--cp-check-label-size);
+		color: var(--cp-check-fg, inherit);
 		cursor: pointer;
+	}
+	/* 单个勾选项（显示日期 / 答案页 / 表内）：原版保持竖排，A/B/C 横排成一整条可点区域 */
+	.config-section > label.checkbox-label {
+		flex-direction: var(--cp-check-dir);
+		justify-content: flex-start;
+		gap: var(--cp-check-gap);
+		color: var(--cp-check-fg, var(--cp-label-fg));
+	}
+	/* 运算多选：A/B/C 下做成大块可点的「胶囊」 */
+	.config-section > label.checkbox-label,
+	.checkbox-group .checkbox-label {
+		min-height: var(--cp-chip-h);
+		padding: var(--cp-chip-pad);
+		border: var(--cp-chip-border);
+		border-radius: var(--cp-chip-radius);
+		background: var(--cp-chip-bg);
+		box-sizing: border-box;
+	}
+	:global(html[data-ui-theme]) .config-section > label.checkbox-label:has(input:checked),
+	:global(html[data-ui-theme]) .checkbox-group .checkbox-label:has(input:checked) {
+		background: var(--cp-chip-on-bg);
+		border: var(--cp-chip-on-border);
+		color: var(--cp-chip-on-fg);
+		font-weight: var(--cp-chip-on-weight);
 	}
 
 	.range-inputs {
@@ -437,8 +523,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
-		font-size: 0.75rem;
-		color: #777;
+		font-size: var(--cp-small-size);
+		color: var(--cp-small-fg);
 	}
 
 	.ratio-inputs {
@@ -449,14 +535,16 @@
 
 	.ratio-inputs label {
 		display: grid;
-		grid-template-columns: 80px 1fr 40px;
+		grid-template-columns: 3.2em 1fr 3em;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 0.75rem;
+		min-height: 44px;
+		font-size: 1rem;
+		color: var(--cp-small-fg);
 	}
 
 	.error {
-		color: #e03131;
+		color: var(--cp-error-fg);
 		font-size: 0.8rem;
 		margin: 0.35rem 0 0;
 	}
@@ -465,18 +553,18 @@
 	}
 	.hint,
 	.note {
-		color: #888;
-		font-size: 0.75rem;
+		color: var(--cp-hint-fg);
+		font-size: var(--cp-hint-size);
 		margin: 0.35rem 0 0;
 	}
 	.note {
-		color: #e8590c;
+		color: var(--cp-note-fg);
 	}
 	.hint-list {
 		margin: 0.4rem 0 0;
 		padding-left: 1.1rem;
-		color: #888;
-		font-size: 0.75rem;
+		color: var(--cp-hint-fg);
+		font-size: var(--cp-hint-size);
 	}
 	input.invalid,
 	.checkbox-group.invalid {
@@ -486,63 +574,122 @@
 	}
 	.table-opt {
 		margin-top: 0.5rem;
-		font-size: 0.8rem;
+		font-size: var(--cp-hint-size);
 	}
 
 	.ratio-inputs input[type='range'] {
 		width: 100%;
 	}
+	/* A/B/C：滑块轨道柔和、拇指更大，便于触屏拖动 */
+	:global(html[data-ui-theme]) .ratio-inputs input[type='range'] {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 28px;
+		margin: 0;
+		background: transparent;
+		cursor: pointer;
+	}
+	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-webkit-slider-runnable-track {
+		height: 8px;
+		border-radius: 999px;
+		background: var(--cp-range-track);
+	}
+	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-moz-range-track {
+		height: 8px;
+		border-radius: 999px;
+		background: var(--cp-range-track);
+	}
+	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		width: 22px;
+		height: 22px;
+		margin-top: -7px;
+		border-radius: 50%;
+		border: 3px solid #fff;
+		background: var(--cp-accent);
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+	}
+	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-moz-range-thumb {
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		border: 3px solid #fff;
+		background: var(--cp-accent);
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+	}
 
 	.button-group {
-		display: flex;
-		gap: 0.75rem;
-		margin-top: 1.5rem;
+		display: var(--cp-btns-display);
+		grid-template-columns: 1fr 1fr;
+		gap: var(--cp-btns-gap);
+		margin-top: var(--cp-btns-mt);
 	}
 
 	.btn {
 		flex: 1;
-		padding: 0.75rem 1rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--cp-btn-pad, 0.75rem 1rem);
+		min-height: var(--cp-btn-h);
 		border: none;
-		border-radius: 6px;
-		font-size: 1rem;
+		border-radius: var(--cp-btn-radius);
+		font-size: var(--cp-btn-size);
 		cursor: pointer;
-		transition: background-color 0.2s;
+		transition:
+			background-color 0.2s,
+			transform 0.15s,
+			box-shadow 0.2s;
+	}
+	/* A/B/C：主按钮「生成」占满一行，打印 / PDF 并排 */
+	.btn.primary {
+		grid-column: var(--cp-primary-span);
 	}
 
 	.btn.primary {
-		background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
-		color: white;
-		font-weight: 600;
-		box-shadow: 0 3px 8px rgba(255, 107, 107, 0.4);
+		background: var(--cp-btn1-bg);
+		color: var(--cp-btn1-fg);
+		border: var(--cp-btn1-border, none);
+		font-weight: var(--cp-btn-weight);
+		box-shadow: var(--cp-btn1-shadow);
 	}
 
 	.btn.primary:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(255, 107, 107, 0.5);
+		transform: var(--cp-btn-hover-transform);
+		background: var(--cp-btn1-hover-bg);
+		box-shadow: var(--cp-btn1-hover-shadow);
 	}
 
 	.btn.secondary {
-		background: linear-gradient(135deg, #51cf66 0%, #20c997 100%);
-		color: white;
-		font-weight: 600;
-		box-shadow: 0 3px 8px rgba(81, 207, 102, 0.4);
+		background: var(--cp-btn2-bg);
+		color: var(--cp-btn2-fg);
+		border: var(--cp-btn2-border, none);
+		font-weight: var(--cp-btn-weight);
+		box-shadow: var(--cp-btn2-shadow);
 	}
 
 	.btn.secondary:hover {
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(81, 207, 102, 0.5);
+		transform: var(--cp-btn-hover-transform);
+		background: var(--cp-btn2-hover-bg);
+		box-shadow: var(--cp-btn2-hover-shadow);
 	}
 
 	.btn.pdf {
-		background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-		color: white;
-		font-weight: 600;
-		box-shadow: 0 3px 8px rgba(231, 76, 60, 0.4);
+		background: var(--cp-btn3-bg);
+		color: var(--cp-btn3-fg);
+		border: var(--cp-btn3-border, none);
+		font-weight: var(--cp-btn-weight);
+		box-shadow: var(--cp-btn3-shadow);
 	}
 
 	.btn.pdf:hover:not(:disabled) {
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+		transform: var(--cp-btn-hover-transform);
+		background: var(--cp-btn3-hover-bg);
+		box-shadow: var(--cp-btn3-hover-shadow);
+	}
+	.btn:focus-visible {
+		outline: 3px solid var(--cp-accent);
+		outline-offset: 2px;
 	}
 
 	.btn:disabled {
@@ -588,15 +735,10 @@
 		}
 
 		.range-inputs {
-			grid-template-columns: 1fr;
 			gap: 0.5rem;
 		}
 
-		.ratio-inputs label {
-			grid-template-columns: 60px 1fr 35px;
-			gap: 0.4rem;
-			font-size: 0.7rem;
-		}
+
 
 		.button-group {
 			flex-direction: column;
@@ -620,10 +762,7 @@
 			font-size: 1.1rem;
 		}
 
-		.ratio-inputs label {
-			grid-template-columns: 50px 1fr 30px;
-			font-size: 0.65rem;
-		}
+
 
 		.btn {
 			padding: 0.75rem;

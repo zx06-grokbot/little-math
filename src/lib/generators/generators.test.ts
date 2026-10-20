@@ -259,7 +259,7 @@ describe('题量补足（报告问题 5）', () => {
 		const r = generateWorksheet(cfg({ range: { min: 1, max: 3 }, operations: ['add'], totalCount: 30 }), seededRng(1));
 		expect(r.problems).toHaveLength(30);
 		expect(r.uniqueCount).toBe(3); // 1+1, 1+2, 2+1
-		expect(r.notice).toMatch(/只有 3 道不同的题/);
+		expect(r.notice).toMatch(/只有 3 道不一样的题/);
 	});
 	it('凑十要 30 道：18 道不同 + 补足', () => {
 		const r = generateMakeTargetProblemsDetailed(10, 30, seededRng(2));
@@ -322,9 +322,9 @@ describe('输入校验（报告问题 6）', () => {
 
 describe('标题与设置一致（第二轮问题 1）', () => {
 	it('自动标题', () => {
-		expect(autoTitle(cfg({ range: { min: 1, max: 10 }, operations: ['add'] }))).toBe('10以内加法练习');
-		expect(autoTitle(cfg({ range: { min: 1, max: 20 }, operations: ['add', 'sub'] }))).toBe('20以内加减法练习');
-		expect(autoTitle(cfg({ range: { min: 20, max: 100 }, operations: ['mul', 'div'], problemMode: 'chain' }))).toBe('20～100乘除法连续运算');
-		expect(autoTitle(cfg({ problemMode: 'makeTarget', makeTargetValue: 10 }))).toBe('凑10练习');
+		expect(autoTitle(cfg({ range: { min: 1, max: 10 }, operations: ['add'] }))).toBe('10以内加法小练习');
+		expect(autoTitle(cfg({ range: { min: 1, max: 20 }, operations: ['add', 'sub'] }))).toBe('20以内加减法小练习');
+		expect(autoTitle(cfg({ range: { min: 20, max: 100 }, operations: ['mul', 'div'], problemMode: 'chain' }))).toBe('20～100乘除法连着算');
+		expect(autoTitle(cfg({ problemMode: 'makeTarget', makeTargetValue: 10 }))).toBe('凑10游戏');
 	});
 });
