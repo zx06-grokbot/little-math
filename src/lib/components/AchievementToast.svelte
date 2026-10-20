@@ -22,15 +22,15 @@
 </script>
 
 {#if visible}
-	<div class="achievement-toast" data-testid="achievement-toast">
+	<div class="achievement-toast" data-testid="achievement-toast" role="status">
 		<div class="toast-content">
-			<div class="icon">{achievement.icon}</div>
+			<div class="icon" aria-hidden="true">{achievement.icon}</div>
 			<div class="text">
-				<div class="title">成就解锁！</div>
+				<div class="title">🎁 得到新奖章啦！</div>
 				<div class="name">{achievement.name}</div>
 				<div class="description">{achievement.description}</div>
 			</div>
-			<button class="close-btn" onclick={onClose}>×</button>
+			<button class="close-btn" onclick={onClose} aria-label="关上">✕</button>
 		</div>
 	</div>
 {/if}
@@ -41,48 +41,36 @@
 		top: 20px;
 		right: 20px;
 		z-index: 9999;
-		animation: slideIn 0.5s ease;
+		animation: slideIn 0.4s ease;
 	}
-
 	@keyframes slideIn {
 		from {
-			transform: translateX(100%);
+			transform: translateY(-20px);
 			opacity: 0;
 		}
 		to {
-			transform: translateX(0);
+			transform: translateY(0);
 			opacity: 1;
 		}
 	}
-
 	.toast-content {
 		display: flex;
 		align-items: center;
 		gap: 1rem;
-		background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-		padding: 1rem 1.5rem;
-		border-radius: 12px;
-		box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-		border: 2px solid #ffcc00;
-		min-width: 320px;
-		animation: pulse 2s ease-in-out infinite;
+		width: min(400px, calc(100vw - 40px));
+		box-sizing: border-box;
+		padding: 1rem 0.75rem 1rem 1.25rem;
+		background: var(--c-warn-soft);
+		color: var(--c-text);
+		border: 3px solid var(--c-badge-border);
+		border-radius: var(--c-radius-lg);
+		box-shadow: var(--c-shadow-lg);
 	}
-
-	@keyframes pulse {
-		0%,
-		100% {
-			box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-		}
-		50% {
-			box-shadow: 0 4px 30px rgba(255, 215, 0, 0.6);
-		}
-	}
-
 	.icon {
 		font-size: 3rem;
+		line-height: 1;
 		animation: bounce 1s ease;
 	}
-
 	@keyframes bounce {
 		0%,
 		100% {
@@ -92,104 +80,49 @@
 			transform: scale(1.2);
 		}
 	}
-
 	.text {
 		flex: 1;
+		min-width: 0;
 	}
-
 	.title {
-		font-size: 0.875rem;
-		color: #8b6914;
-		font-weight: 600;
-		margin-bottom: 0.25rem;
-	}
-
-	.name {
-		font-size: 1.25rem;
-		color: #333;
+		font-size: 1rem;
+		color: var(--c-warn);
 		font-weight: 700;
-		margin-bottom: 0.25rem;
 	}
-
+	.name {
+		font-size: 1.4rem;
+		font-weight: 800;
+		margin: 0.15rem 0;
+	}
 	.description {
-		font-size: 0.875rem;
-		color: #666;
+		font-size: 1rem;
+		color: var(--c-muted);
 	}
-
 	.close-btn {
-		background: rgba(0, 0, 0, 0.1);
+		flex: 0 0 auto;
+		width: 48px;
+		height: 48px;
 		border: none;
-		color: #333;
-		font-size: 1.5rem;
-		width: 32px;
-		height: 32px;
 		border-radius: 50%;
+		background: transparent;
+		color: inherit;
+		font-size: 1.3rem;
 		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: background 0.2s;
 	}
-
 	.close-btn:hover {
-		background: rgba(0, 0, 0, 0.2);
+		background: var(--c-surface);
 	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
+	@media (max-width: 560px) {
 		.achievement-toast {
 			top: 10px;
 			right: 10px;
 			left: 10px;
 		}
-
 		.toast-content {
-			min-width: auto;
-			padding: 0.875rem 1rem;
+			width: 100%;
 		}
-
 		.icon {
 			font-size: 2.5rem;
-		}
-
-		.title {
-			font-size: 0.75rem;
-		}
-
-		.name {
-			font-size: 1.1rem;
-		}
-
-		.description {
-			font-size: 0.75rem;
-		}
-
-		.close-btn {
-			width: 28px;
-			height: 28px;
-			font-size: 1.25rem;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.toast-content {
-			padding: 0.75rem 0.875rem;
-		}
-
-		.icon {
-			font-size: 2rem;
-		}
-
-		.title {
-			font-size: 0.7rem;
-		}
-
-		.name {
-			font-size: 1rem;
-		}
-
-		.description {
-			font-size: 0.7rem;
 		}
 	}
 </style>

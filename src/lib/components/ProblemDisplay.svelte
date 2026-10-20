@@ -25,27 +25,14 @@
 
 <style>
 	.problem-display {
-		font-size: clamp(1.8rem, 6vw, 3.4rem);
-		font-family: 'Comic Sans MS', cursive;
-		color: #333;
+		font-size: clamp(1.6rem, 7.2vw, 3.6rem);
+		font-weight: 700;
+		color: var(--c-text);
 		text-align: center;
-		padding: 2rem;
+		padding: 1.75rem 0.5rem 2rem;
+		letter-spacing: 0.02em;
+		font-variant-numeric: tabular-nums;
 		word-break: keep-all;
 		overflow-wrap: anywhere;
-	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		.problem-display {
-			font-size: 2.5rem;
-			padding: 1.5rem;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.problem-display {
-			font-size: 2rem;
-			padding: 1rem;
-		}
 	}
 </style>

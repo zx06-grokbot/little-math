@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { UI_THEMES, currentUiTheme, setUiTheme, type UiThemeId } from '$lib/config/uiThemes';
+	import { UI_THEMES, DEFAULT_UI_THEME, currentUiTheme, setUiTheme, type UiThemeId } from '$lib/config/uiThemes';
 
-	let selected = $state<UiThemeId>('classic');
+	let selected = $state<UiThemeId>(DEFAULT_UI_THEME);
 
 	onMount(() => {
 		selected = currentUiTheme();
@@ -14,13 +14,14 @@
 	}
 </script>
 
-<div class="ui-theme-switcher no-print" role="radiogroup" aria-label="界面风格" data-testid="ui-theme-switcher">
-	<span class="uts-label">界面风格</span>
+<div class="ui-theme-switcher no-print" role="radiogroup" aria-label="换颜色" data-testid="ui-theme-switcher">
+	<span class="uts-label" aria-hidden="true">🎨</span>
 	{#each UI_THEMES as t}
 		<button
 			type="button"
 			role="radio"
 			aria-checked={selected === t.id}
+			aria-label={t.name}
 			class="uts-opt"
 			class:selected={selected === t.id}
 			title={t.desc}
@@ -28,8 +29,7 @@
 			onclick={() => pick(t.id)}
 		>
 			<span class="uts-icon" aria-hidden="true">{t.icon}</span>
-			<span class="uts-long">{t.id === 'classic' ? '' : `${t.id.toUpperCase()} · `}{t.name}</span>
-			<span class="uts-short">{t.id === 'classic' ? '' : `${t.id.toUpperCase()} `}{t.short}</span>
+			<span aria-hidden="true">{t.name}</span>
 		</button>
 	{/each}
 </div>
@@ -37,66 +37,57 @@
 <style>
 	.ui-theme-switcher {
 		display: inline-flex;
-		flex-wrap: wrap;
 		align-items: center;
-		justify-content: center;
-		gap: 0.4rem;
-		margin-top: var(--h-switch-mt, 0.75rem);
-		padding: 0.3rem;
+		gap: 0.25rem;
+		padding: 0.25rem;
 		border-radius: var(--h-switch-radius, 999px);
-		background: var(--h-switch-bg, rgba(255, 255, 255, 0.22));
+		background: var(--h-switch-bg);
 		border: var(--h-switch-border, none);
-		font-size: var(--h-switch-size, 0.85rem);
+		font-size: 0.95rem;
 	}
 	.uts-label {
-		padding: 0 0.4rem 0 0.6rem;
-		color: var(--h-switch-label, rgba(255, 255, 255, 0.95));
-		font-weight: 600;
+		padding: 0 0.3rem 0 0.45rem;
+		font-size: 1.1rem;
 	}
 	.uts-opt {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
-		min-height: var(--h-switch-h, 34px);
+		min-height: 44px;
 		padding: 0 0.85rem;
 		border: none;
 		border-radius: var(--h-switch-radius, 999px);
 		background: transparent;
-		color: var(--h-switch-fg, #fff);
+		color: var(--h-switch-fg);
 		font: inherit;
 		cursor: pointer;
 		transition: background 0.15s;
+		white-space: nowrap;
 	}
 	.uts-opt:hover {
-		background: var(--h-switch-hover, rgba(255, 255, 255, 0.25));
+		background: var(--h-switch-hover);
 	}
 	.uts-opt.selected {
-		background: var(--h-switch-on-bg, #fff);
-		color: var(--h-switch-on-fg, #e8590c);
+		background: var(--h-switch-on-bg);
+		color: var(--h-switch-on-fg);
 		font-weight: 700;
-		box-shadow: var(--h-switch-on-shadow, 0 1px 4px rgba(0, 0, 0, 0.15));
+		box-shadow: var(--h-switch-on-shadow);
 	}
 	.uts-opt:focus-visible {
-		outline: 2px solid var(--h-switch-on-fg, #e8590c);
+		outline: 3px solid var(--c-focus);
 		outline-offset: 2px;
-	}
-	.uts-short {
-		display: none;
 	}
 	@media (max-width: 640px) {
 		.ui-theme-switcher {
+			width: 100%;
+			box-sizing: border-box;
+			justify-content: center;
 			border-radius: 14px;
-			gap: 0.2rem;
-		}
-		.uts-label,
-		.uts-long {
-			display: none;
-		}
-		.uts-short {
-			display: inline;
 		}
 		.uts-opt {
-			padding: 0 0.6rem;
+			flex: 1 1 0;
+			justify-content: center;
+			padding: 0 0.4rem;
 			border-radius: 10px;
 		}
 	}

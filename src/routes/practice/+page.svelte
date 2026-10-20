@@ -74,7 +74,7 @@
 		startError = null;
 		const r = generateWorksheet({ ...$state.snapshot(config), countPerPage: 1 } as ExerciseConfig);
 		if (r.issues.length || r.problems.length === 0) {
-			startError = r.issues[0]?.message ?? '当前设置下生成不了题目，请调整设置';
+			startError = r.issues[0]?.message ?? '这样出不了题，换一换试试';
 			return;
 		}
 		startWith(r.problems);
@@ -87,7 +87,7 @@
 			if (mode === 'wrong-review' || mode === 'favorite-review') {
 				const list = mode === 'wrong-review' ? generateWrongReview(10) : generateFavoriteReview(10);
 				if (!startWith(list)) {
-					reviewMessage = mode === 'wrong-review' ? '错题本是空的，先做几道题吧！' : '还没有收藏的题目';
+					reviewMessage = mode === 'wrong-review' ? '🎉 没有做错的题，先来玩几道吧！' : '⭐ 还没有收藏的题，先来玩几道吧！';
 				}
 			}
 		});
@@ -184,26 +184,30 @@
 </script>
 
 <svelte:head>
-	<title>在线练习 - 小小数学家</title>
+	<title>做题 - 小小数学家</title>
 </svelte:head>
 
-<div class="practice-page">
-	<header>
-		<a href="/" class="back-link">← 返回首页</a>
-		<h1>🧮 在线练习</h1>
-	</header>
-
+<div class="practice-page ui-page">
 	<main>
 		{#if phase === 'config'}
-			{#if reviewMessage}<p class="review-msg">{reviewMessage}</p>{/if}
+			{#if reviewMessage}<p class="review-msg" data-testid="review-msg">{reviewMessage}</p>{/if}
 			<PracticeConfig bind:config issues={practiceIssues} error={startError} onStart={handleStart} />
 		{:else if phase === 'practice' && problems.length > 0}
-			<div class="practice-area" data-testid="practice-area">
+			<div class="practice-area ui-card" data-testid="practice-area">
 				<div class="top-bar">
-					<div class="progress" data-testid="practice-progress">第 {currentIndex + 1} / {problems.length} 题</div>
+					<div class="progress" data-testid="practice-progress">
+						第 {currentIndex + 1} / {problems.length} 题
+						<span class="progress-bar" aria-hidden="true"><span style="width: {((currentIndex + 1) / problems.length) * 100}%"></span></span>
+					</div>
 					<div class="top-bar-right">
 						{#if showSpeechButton}
-							<button class="speech-btn" onclick={() => speakProblem(problems[currentIndex])} title="读题" data-testid="speech-btn">
+							<button
+								class="speech-btn ui-btn ui-btn-quiet"
+								onclick={() => speakProblem(problems[currentIndex])}
+								title="读给我听"
+								aria-label="读给我听"
+								data-testid="speech-btn"
+							>
 								🔊
 							</button>
 						{/if}
@@ -214,12 +218,13 @@
 				{#if feedback}
 					<div class="feedback" class:ok={feedback.isCorrect} class:bad={!feedback.isCorrect} data-testid="feedback" role="status">
 						{#if feedback.isCorrect}
-							✅ 答对了！
+							<div class="fb-title">🎉 答对啦！</div>
 						{:else}
-							❌ 答错了，正确答案：<strong>{feedback.correctText}</strong>
+							<div class="fb-title">🤗 差一点点！</div>
+							<div class="fb-answer">正确答案：<strong>{feedback.correctText}</strong></div>
 							<div class="full">{formatProblemText(problems[currentIndex], true)}</div>
-							<button class="next-btn" bind:this={nextBtn} onclick={moveToNext}>
-								{currentIndex < problems.length - 1 ? '下一题 →' : '查看结果'}
+							<button class="next-btn ui-btn ui-btn-primary ui-btn-big" bind:this={nextBtn} onclick={moveToNext}>
+								{currentIndex < problems.length - 1 ? '下一题 👉' : '看看成绩 🏅'}
 							</button>
 						{/if}
 					</div>
@@ -259,180 +264,107 @@
 </div>
 
 <style>
-	.practice-page {
-		min-height: 100vh;
-		background: linear-gradient(180deg, #e8f5e9, #fff9c4);
-		font-family: 'Comic Sans MS', cursive;
-	}
-	header {
-		background: linear-gradient(135deg, #ff6b6b, #ffa502, #ffdd59);
-		color: white;
-		padding: 1rem 2rem;
-		display: flex;
-		align-items: center;
-		gap: 2rem;
-	}
-	.back-link {
-		color: white;
-		text-decoration: none;
-		font-size: 1rem;
-	}
-	.back-link:hover {
-		text-decoration: underline;
-	}
-	h1 {
-		margin: 0;
-		font-size: 1.5rem;
-	}
-	main {
-		padding: 2rem;
-	}
 	.practice-area {
-		max-width: 600px;
+		max-width: 640px;
 		margin: 0 auto;
-		background: white;
-		border-radius: 20px;
-		padding: 2rem;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+		padding: 1.75rem 2rem 2rem;
 	}
 	.top-bar {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 2rem;
+		gap: 1rem;
+		margin-bottom: 1rem;
 		padding-bottom: 1rem;
-		border-bottom: 2px dashed #eee;
+		border-bottom: 2px dashed var(--c-border);
 	}
 	.progress {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
 		font-size: 1.25rem;
-		color: #666;
+		font-weight: 700;
+		color: var(--c-muted);
+		min-width: 0;
+		flex: 1 1 auto;
+	}
+	.progress-bar {
+		display: block;
+		height: 10px;
+		max-width: 260px;
+		border-radius: 999px;
+		background: var(--c-surface-2);
+		overflow: hidden;
+	}
+	.progress-bar > span {
+		display: block;
+		height: 100%;
+		border-radius: 999px;
+		background: var(--c-chart-1);
+		transition: width 0.3s;
 	}
 	.top-bar-right {
 		display: flex;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.75rem;
+		flex: 0 0 auto;
+	}
+	.speech-btn {
+		min-width: 56px;
+		padding: 0 0.75rem;
+		font-size: 1.5rem;
 	}
 	.feedback {
-		margin-top: 1rem;
-		padding: 1rem 1.25rem;
-		border-radius: 14px;
+		margin-top: 0.5rem;
+		padding: 1.1rem 1.25rem 1.25rem;
+		border-radius: var(--c-radius);
 		text-align: center;
-		font-size: 1.4rem;
+		font-size: 1.35rem;
+	}
+	.fb-title {
+		font-size: 1.8rem;
+		font-weight: 800;
+	}
+	.fb-answer {
+		margin-top: 0.4rem;
 	}
 	.feedback.ok {
-		background: #ebfbee;
-		color: #2b8a3e;
+		background: var(--c-success-soft);
+		color: var(--c-success);
 	}
 	.feedback.bad {
-		background: #fff5f5;
-		color: #c92a2a;
+		background: var(--c-danger-soft);
+		color: var(--c-danger);
 	}
 	.feedback .full {
 		margin-top: 0.5rem;
-		font-size: 1.1rem;
-		color: #555;
+		font-size: 1.2rem;
+		color: var(--c-text);
 	}
 	.next-btn {
-		margin-top: 0.75rem;
-		padding: 0.6rem 1.5rem;
-		font-size: 1.1rem;
-		border: none;
-		border-radius: 10px;
-		background: linear-gradient(135deg, #5c7cfa, #845ef7);
-		color: white;
-		cursor: pointer;
-		font-family: inherit;
+		margin-top: 1rem;
+		min-width: 12rem;
 	}
 	.review-msg {
+		max-width: 480px;
+		margin: 0 auto 1rem;
+		padding: 0.9rem 1.1rem;
+		border-radius: var(--c-radius);
+		background: var(--c-warn-soft);
+		color: var(--c-warn);
 		text-align: center;
-		color: #e8590c;
-	}
-	.speech-btn {
-		padding: 0.5rem 1rem;
-		font-size: 1.5rem;
-		background: linear-gradient(135deg, #667eea, #764ba2);
-		color: white;
-		border: none;
-		border-radius: 8px;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-	.speech-btn:hover {
-		transform: scale(1.05);
-		box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-	}
-	.speech-btn:active {
-		transform: scale(0.95);
-	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		header {
-			padding: 0.875rem 1.5rem;
-			gap: 1.5rem;
-		}
-
-		.back-link {
-			font-size: 0.9rem;
-		}
-
-		h1 {
-			font-size: 1.25rem;
-		}
-
-		main {
-			padding: 1.5rem;
-		}
-
-		.practice-area {
-			max-width: 100%;
-			padding: 1.5rem;
-			border-radius: 16px;
-		}
-
-		.top-bar {
-			margin-bottom: 1.5rem;
-			padding-bottom: 0.875rem;
-		}
-
-		.progress {
-			font-size: 1.1rem;
-		}
+		font-size: 1.15rem;
 	}
 
 	@media (max-width: 480px) {
-		header {
-			padding: 0.75rem 1rem;
-			gap: 1rem;
+		.practice-area {
+			padding: 1.25rem 1rem 1.5rem;
 		}
-
-		.back-link {
-			font-size: 0.85rem;
-		}
-
-		h1 {
+		.progress {
 			font-size: 1.1rem;
 		}
-
-		main {
-			padding: 1rem;
-		}
-
-		.practice-area {
-			padding: 1.25rem;
-			border-radius: 12px;
-		}
-
-		.top-bar {
-			margin-bottom: 1.25rem;
-			padding-bottom: 0.75rem;
-			flex-direction: column;
-			gap: 0.5rem;
-			align-items: flex-start;
-		}
-
-		.progress {
-			font-size: 1rem;
+		.fb-title {
+			font-size: 1.5rem;
 		}
 	}
 </style>

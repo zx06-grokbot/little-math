@@ -1,8 +1,9 @@
 /*
- * 界面风格 A / B / C（预览）
+ * 界面风格（全站）：a 🍬糖果（默认）/ b 🌳森林 / c 🌊海洋
  * ------------------------------------------------------------
- * 只定义 CSS 变量；组件里写成 var(--x, 原版默认值)，所以没有 data-ui-theme 时（原版）样式完全不变。
- * 切换：页面顶部「界面风格」，或网址 ?theme=a|b|c（?theme=classic 回到原版）。
+ * 所有页面（出题打印、在线练习、错题本、收藏、统计面板、成就提示）只用这里的 CSS 变量和工具类。
+ * :root 即糖果风格，没有 data-ui-theme 时也是糖果（不会出现旧版样式）。
+ * 切换：页头的「糖果 / 森林 / 海洋」，或网址 ?theme=a|b|c（也认 candy / forest / ocean）。
  *
  * 约束：
  *  - 不改横式数字槽 / 括号 / 竖式的宽度与对齐逻辑（PR #27–#31），只改颜色、底色、圆角、间距和基准字号；
@@ -12,7 +13,10 @@
  */
 
 /* ============ 共用：大字 / 大按钮 ============ */
-html[data-ui-theme] {
+:root {
+	--c-tap: 48px;
+	--c-radius-lg: 20px;
+	--c-radius: 14px;
 	--ui-sidebar-w: 360px;
 	--ui-gap: 1.5rem;
 	--h-pad: 1.1rem 2rem 1rem;
@@ -53,7 +57,6 @@ html[data-ui-theme] {
 	--cp-btn-h: 56px;
 	--cp-btn-size: 1.15rem;
 	--cp-btn-weight: 700;
-	--cp-print-theme-display: none;
 
 	--bn-size: 1rem;
 
@@ -76,8 +79,35 @@ html[data-ui-theme] {
 	--s-col-gap: 5mm;
 }
 
-/* ============ A 清新童趣：柔和粉彩、圆角卡片 ============ */
+/* ============ 🍬 糖果（a，默认）：柔和粉彩、圆角卡片 ============ */
+:root,
 html[data-ui-theme='a'] {
+	/* 语义色：全站页面共用 */
+	--c-text: #4a4458;
+	--c-muted: #8a7f96;
+	--c-title: #d4607f;
+	--c-surface: #ffffff;
+	--c-surface-2: #fdf5f8;
+	--c-border: #f1e6ee;
+	--c-card-border: none;
+	--c-shadow: 0 6px 20px rgba(214, 170, 190, 0.2);
+	--c-shadow-lg: 0 12px 36px rgba(180, 130, 155, 0.28);
+	--c-focus: #d66d8c;
+	--c-primary: #d4607f;
+	--c-primary-soft: #fff0f5;
+	--c-on-primary-soft: #a8405f;
+	--c-success: #2f9e6a;
+	--c-success-soft: #e7f7ee;
+	--c-danger: #cf3f63;
+	--c-danger-soft: #fdecf1;
+	--c-warn: #a2581c;
+	--c-warn-soft: #fff3e2;
+	--c-info: #3a5f8f;
+	--c-info-soft: #eaf4ff;
+	--c-chart-1: #8fd4b0;
+	--c-chart-2: #e6f6ee;
+	--c-badge-bg: #fff6d6;
+	--c-badge-border: #ffe08a;
 	--ui-font: 'Nunito', 'Varela Round', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
 	--ui-bg: #fbf6f1;
 	--ui-fg: #4a4458;
@@ -193,8 +223,34 @@ html[data-ui-theme='a'] {
 	--s-vbox: #c9bcd0;
 }
 
-/* ============ B 纸感学习本：米白纸、墨绿一个强调色 ============ */
+/* ============ 🌳 森林（b）：米白纸、墨绿一个强调色 ============ */
 html[data-ui-theme='b'] {
+	/* 语义色：全站页面共用 */
+	--c-text: #34322d;
+	--c-muted: #7a7566;
+	--c-title: #2b2a26;
+	--c-surface: #fffdf8;
+	--c-surface-2: #f6f2e9;
+	--c-border: #e3dccd;
+	--c-card-border: 1px solid #e3dccd;
+	--c-shadow: 0 1px 0 #e3dccd, 0 6px 16px rgba(90, 80, 60, 0.05);
+	--c-shadow-lg: 0 12px 32px rgba(60, 50, 30, 0.16);
+	--c-focus: #2f6f5e;
+	--c-primary: #2f6f5e;
+	--c-primary-soft: #eaf2ee;
+	--c-on-primary-soft: #22584a;
+	--c-success: #2f6f5e;
+	--c-success-soft: #eaf2ee;
+	--c-danger: #b3402a;
+	--c-danger-soft: #f8ebe6;
+	--c-warn: #8a5a22;
+	--c-warn-soft: #f7efe2;
+	--c-info: #2f5a4e;
+	--c-info-soft: #eef3ef;
+	--c-chart-1: #6f9f8f;
+	--c-chart-2: #e4ece6;
+	--c-badge-bg: #fbf6e6;
+	--c-badge-border: #d9caa0;
 	--ui-font: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
 	--ui-serif: 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'Source Han Serif SC', 'SimSun', serif;
 	--ui-bg: #efebe3;
@@ -245,6 +301,8 @@ html[data-ui-theme='b'] {
 	--cp-label-fg: #4a473f;
 	--cp-ico-size: 1.5em;
 	--cp-ico-filter: grayscale(1) opacity(0.75);
+	--cp-ico-bg: transparent;
+	--cp-ico-font: 1.05em;
 	--cp-btn-ico-filter: grayscale(1);
 	--cp-input-border: 1px solid #d6cfbf;
 	--cp-input-radius: 6px;
@@ -330,8 +388,34 @@ html[data-ui-theme='b'] {
 	--s-vbox: #b9b09c;
 }
 
-/* ============ C 现代扁平：清爽、强对比、利落间距 ============ */
+/* ============ 🌊 海洋（c）：白底、蓝色、对比清楚 ============ */
 html[data-ui-theme='c'] {
+	/* 语义色：全站页面共用 */
+	--c-text: #0f172a;
+	--c-muted: #64748b;
+	--c-title: #0f172a;
+	--c-surface: #ffffff;
+	--c-surface-2: #f1f5f9;
+	--c-border: #e2e8f0;
+	--c-card-border: 1px solid #e2e8f0;
+	--c-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+	--c-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
+	--c-focus: #3d6ef0;
+	--c-primary: #3d6ef0;
+	--c-primary-soft: #eef3ff;
+	--c-on-primary-soft: #1e3a8a;
+	--c-success: #0b8a5f;
+	--c-success-soft: #ecfdf5;
+	--c-danger: #dc2626;
+	--c-danger-soft: #fef2f2;
+	--c-warn: #c2410c;
+	--c-warn-soft: #fff7ed;
+	--c-info: #1e40af;
+	--c-info-soft: #eef3ff;
+	--c-chart-1: #6c93f5;
+	--c-chart-2: #e3ebff;
+	--c-badge-bg: #fffbeb;
+	--c-badge-border: #fcd34d;
 	--ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
 	--ui-bg: #f1f4f9;
 	--ui-fg: #0f172a;
@@ -460,9 +544,149 @@ html[data-ui-theme='c'] {
 	--s-vbox: #94a3b8;
 }
 
+/* ============ 全站基础样式 + 工具类（各页面直接用 class） ============ */
+body {
+	margin: 0;
+	font-family: var(--ui-font);
+	background: var(--ui-bg);
+	color: var(--ui-fg);
+	-webkit-text-size-adjust: 100%;
+}
+button,
+input,
+select,
+textarea {
+	font-family: inherit;
+}
+
+/* 子页面外框：居中、留白 */
+.ui-page {
+	max-width: 820px;
+	margin: 0 auto;
+	padding: 1.5rem 1.25rem 3rem;
+	box-sizing: border-box;
+}
+.ui-page-title {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4em;
+	margin: 0.25rem 0 1.25rem;
+	font-size: 2rem;
+	font-weight: 800;
+	color: var(--c-title);
+	font-family: var(--cp-h2-font, inherit);
+	letter-spacing: 0.04em;
+	text-align: center;
+}
+.ui-card {
+	background: var(--c-surface);
+	border: var(--c-card-border);
+	border-radius: var(--c-radius-lg);
+	box-shadow: var(--c-shadow);
+}
+
+/* 大按钮：≥ 52px 高，图标 + 两三个字 */
+.ui-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4em;
+	min-height: 52px;
+	padding: 0 1.4rem;
+	box-sizing: border-box;
+	border: none;
+	border-radius: var(--cp-btn-radius);
+	font-size: 1.15rem;
+	font-weight: 700;
+	line-height: 1.2;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background-color 0.15s,
+		box-shadow 0.15s,
+		transform 0.15s;
+}
+.ui-btn:hover {
+	transform: var(--cp-btn-hover-transform, none);
+}
+.ui-btn:active {
+	transform: translateY(1px);
+}
+.ui-btn:focus-visible {
+	outline: 3px solid var(--c-focus);
+	outline-offset: 2px;
+}
+.ui-btn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	transform: none;
+}
+.ui-btn-big {
+	min-height: 60px;
+	font-size: 1.35rem;
+}
+.ui-btn-primary {
+	background: var(--cp-btn1-bg);
+	color: var(--cp-btn1-fg);
+	border: var(--cp-btn1-border, none);
+	box-shadow: var(--cp-btn1-shadow, none);
+}
+.ui-btn-primary:hover:not(:disabled) {
+	background: var(--cp-btn1-hover-bg);
+}
+.ui-btn-secondary {
+	background: var(--cp-btn2-bg);
+	color: var(--cp-btn2-fg);
+	border: var(--cp-btn2-border, none);
+	box-shadow: var(--cp-btn2-shadow, none);
+}
+.ui-btn-secondary:hover:not(:disabled) {
+	background: var(--cp-btn2-hover-bg);
+}
+.ui-btn-quiet {
+	background: var(--cp-btn3-bg);
+	color: var(--cp-btn3-fg);
+	border: var(--cp-btn3-border, none);
+	box-shadow: var(--cp-btn3-shadow, none);
+}
+.ui-btn-quiet:hover:not(:disabled) {
+	background: var(--cp-btn3-hover-bg);
+}
+.ui-btn-danger {
+	background: var(--c-danger-soft);
+	color: var(--c-danger);
+	border: 1.5px solid transparent;
+}
+.ui-btn-danger:hover:not(:disabled) {
+	border-color: var(--c-danger);
+}
+
+/* 大输入框 */
+.ui-input {
+	min-height: 52px;
+	padding: 0 0.85rem;
+	box-sizing: border-box;
+	border: var(--cp-input-border);
+	border-radius: var(--cp-input-radius);
+	background: var(--cp-input-bg);
+	color: var(--c-text);
+	font-size: 1.15rem;
+}
+.ui-input:focus {
+	outline: none;
+	border-color: var(--cp-focus-border);
+	box-shadow: var(--cp-focus-ring);
+}
+
 /* ============ 打印 / 导出 PDF：黑字白底、省墨 ============ */
 @media print {
-	html[data-ui-theme] {
+	html,
+	body {
+		background: #fff !important;
+		color: #000 !important;
+	}
+	html:root {
 		--s-page-bg: #fff;
 		--s-page-radius: 0;
 		--s-page-shadow: none;
@@ -490,8 +714,8 @@ html[data-ui-theme='c'] {
 		--s-vbox: #777;
 	}
 }
-/* html2canvas 导出 PDF 时在克隆文档上加 data-ink="print"，套用同一套黑白变量 */
-html[data-ui-theme][data-ink='print'] {
+/* 导出 PDF 时在文档上临时加 data-ink="print"，套用同一套黑白变量 */
+html:root[data-ink='print'] {
 	--s-page-bg: #fff;
 	--s-page-radius: 0;
 	--s-page-shadow: none;

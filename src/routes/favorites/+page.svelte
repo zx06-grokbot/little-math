@@ -22,7 +22,7 @@
 	}
 
 	function handleClear() {
-		if (confirm('确定要清空所有收藏吗？')) {
+		if (confirm('真的要把收藏都清掉吗？')) {
 			clearFavorites();
 			records = [];
 		}
@@ -39,261 +39,131 @@
 </script>
 
 <svelte:head>
-	<title>收藏题库 - 小小数学家</title>
+	<title>收藏 - 小小数学家</title>
 </svelte:head>
 
-<div class="favorites-page">
-	<header>
-		<a href="/" class="back-link">← 返回首页</a>
-		<h1>⭐ 收藏题库</h1>
-	</header>
-
-	<main>
-		{#if records.length === 0}
-			<div class="empty" data-testid="favorites-empty">
-				<div class="emoji">📚</div>
-				<p>还没有收藏的题目</p>
-				<p class="hint">在练习结果页面点击星星图标收藏题目</p>
-				<a href="/practice" class="start-link">去练习</a>
-			</div>
-		{:else}
-			<div class="actions">
-				<button class="review-btn" onclick={handleReview}>
-					📝 收藏练习 ({records.length}题)
-				</button>
-				<button class="clear-btn" onclick={handleClear}>🗑️ 清空</button>
-			</div>
-
-			<div class="records-list">
-				{#each records.slice().reverse() as record}
-					<div class="record-card" data-testid="favorite-record">
+<div class="favorites-page list-page ui-page">
+	<h1 class="ui-page-title">⭐ 收藏</h1>
+	<p class="sub">喜欢的题放在这里，想玩就来玩</p>
+	{#if records.length === 0}
+		<div class="empty ui-card" data-testid="favorites-empty">
+			<div class="emoji" aria-hidden="true">🌟</div>
+			<p>这里还没有收藏的题</p>
+			<p class="hint">做完题后，点一下 ☆ 就能收藏</p>
+			<a href="/practice" class="ui-btn ui-btn-primary ui-btn-big">🎯 去做题</a>
+		</div>
+	{:else}
+		<div class="actions">
+			<button class="grow ui-btn ui-btn-primary ui-btn-big" onclick={handleReview}>
+				🎮 玩收藏的题（{records.length} 道）
+			</button>
+			<button class="ui-btn ui-btn-quiet ui-btn-big" onclick={handleClear}>🗑️ 全部清掉</button>
+		</div>
+		<div class="records-list">
+			{#each records.slice().reverse() as record}
+				<div class="record-card ui-card" data-testid="favorite-record">
+					<div class="record-main">
 						<div class="problem">{formatProblem(record.problem)}</div>
 						<div class="meta">
-							<span class="date">{formatDate(record.timestamp)}</span>
-							<button class="remove-btn" data-testid="favorite-remove" onclick={() => handleRemove(record.timestamp)}>删除</button>
+							<span class="date">📅 {formatDate(record.timestamp)}</span>
 						</div>
 					</div>
-				{/each}
-			</div>
-		{/if}
-	</main>
+					<button class="remove-btn ui-btn ui-btn-quiet" data-testid="favorite-remove" onclick={() => handleRemove(record.timestamp)} aria-label="不收藏了">☆ 不要了</button>
+				</div>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
-	.favorites-page {
-		min-height: 100vh;
-		background: linear-gradient(180deg, #fff8e1, #e3f2fd);
-		font-family: 'Comic Sans MS', cursive;
+	.list-page {
+		padding-top: 0.5rem;
+		padding-bottom: 2.5rem;
 	}
-	header {
-		background: linear-gradient(135deg, #667eea, #764ba2);
-		color: white;
-		padding: 1rem 2rem;
-		display: flex;
-		align-items: center;
-		gap: 2rem;
-	}
-	.back-link {
-		color: white;
-		text-decoration: none;
-	}
-	h1 {
-		margin: 0;
-		font-size: 1.5rem;
-	}
-	main {
-		padding: 2rem;
-		max-width: 800px;
-		margin: 0 auto;
+	.sub {
+		margin: -0.5rem 0 1.25rem;
+		text-align: center;
+		color: var(--c-muted);
+		font-size: 1.15rem;
 	}
 	.empty {
 		text-align: center;
-		padding: 4rem 2rem;
-		background: white;
-		border-radius: 20px;
+		padding: 2.75rem 1.5rem 2.5rem;
 	}
 	.empty .emoji {
-		font-size: 4rem;
+		font-size: 4.5rem;
+		line-height: 1.1;
 	}
 	.empty p {
-		color: #666;
-		font-size: 1.25rem;
+		margin: 0.75rem 0 0;
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: var(--c-text);
 	}
 	.empty .hint {
-		font-size: 0.9rem;
-		color: #999;
-		margin-top: 0.5rem;
+		font-size: 1.1rem;
+		font-weight: 400;
+		color: var(--c-muted);
 	}
-	.start-link {
-		display: inline-block;
-		margin-top: 1rem;
-		padding: 0.75rem 2rem;
-		background: linear-gradient(135deg, #667eea, #764ba2);
-		color: white;
+	.empty .ui-btn {
+		margin-top: 1.5rem;
+		min-width: 11rem;
 		text-decoration: none;
-		border-radius: 12px;
 	}
 	.actions {
 		display: flex;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
+		gap: 0.9rem;
+		margin-bottom: 1.25rem;
 	}
-	.review-btn {
-		flex: 1;
-		padding: 1rem;
-		font-size: 1.25rem;
-		background: linear-gradient(135deg, #667eea, #764ba2);
-		color: white;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		font-family: inherit;
-	}
-	.clear-btn {
-		padding: 1rem 1.5rem;
-		font-size: 1rem;
-		background: #f1f3f4;
-		color: #666;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		font-family: inherit;
+	.actions .grow {
+		flex: 1 1 auto;
 	}
 	.records-list {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.9rem;
 	}
 	.record-card {
-		background: white;
-		border-radius: 12px;
-		padding: 1rem 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 1rem 1.1rem 1rem 1.4rem;
+	}
+	.record-main {
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 	.problem {
-		font-size: 1.5rem;
-		color: #333;
-		margin-bottom: 0.5rem;
+		font-size: 1.7rem;
+		font-weight: 700;
+		color: var(--c-text);
+		font-variant-numeric: tabular-nums;
+		overflow-wrap: anywhere;
 	}
 	.meta {
 		display: flex;
-		gap: 1rem;
-		font-size: 0.8rem;
-		color: #999;
-		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
+		margin-top: 0.4rem;
+		font-size: 0.95rem;
+		color: var(--c-muted);
 	}
 	.remove-btn {
-		margin-left: auto;
-		padding: 0.25rem 0.75rem;
-		background: #fee;
-		color: #ff6b6b;
-		border: 1px solid #fcc;
-		border-radius: 6px;
-		cursor: pointer;
-		font-size: 0.8rem;
+		flex: 0 0 auto;
+		min-width: 48px;
+		padding: 0 1rem;
+		font-size: 1.05rem;
 	}
-
-	@media (max-width: 768px) {
-		header {
-			padding: 0.875rem 1.5rem;
-			gap: 1.5rem;
-		}
-		.back-link {
-			font-size: 0.9rem;
-		}
-		h1 {
-			font-size: 1.25rem;
-		}
-		main {
-			padding: 1.5rem;
-			max-width: 100%;
-		}
-		.empty {
-			padding: 3rem 1.5rem;
-			border-radius: 16px;
-		}
-		.empty .emoji {
-			font-size: 3rem;
-		}
-		.empty p {
-			font-size: 1.1rem;
-		}
-		.actions {
-			gap: 0.75rem;
-			margin-bottom: 1.25rem;
-		}
-		.review-btn {
-			padding: 0.875rem;
-			font-size: 1.1rem;
-		}
-		.clear-btn {
-			padding: 0.875rem 1.25rem;
-			font-size: 0.9rem;
-		}
-		.record-card {
-			padding: 0.875rem 1.25rem;
-		}
-		.problem {
-			font-size: 1.25rem;
-		}
-		.meta {
-			gap: 0.75rem;
-			font-size: 0.75rem;
-			flex-wrap: wrap;
-		}
-		.remove-btn {
-			margin-left: 0;
-			padding: 0.25rem 0.5rem;
-			font-size: 0.75rem;
-		}
-	}
-
-	@media (max-width: 480px) {
-		header {
-			padding: 0.75rem 1rem;
-			gap: 1rem;
-		}
-		.back-link {
-			font-size: 0.85rem;
-		}
-		h1 {
-			font-size: 1.1rem;
-		}
-		main {
-			padding: 1rem;
-		}
-		.empty {
-			padding: 2rem 1rem;
-			border-radius: 12px;
-		}
-		.empty .emoji {
-			font-size: 2.5rem;
-		}
-		.empty p {
-			font-size: 1rem;
-		}
+	@media (max-width: 560px) {
 		.actions {
 			flex-direction: column;
-			gap: 0.5rem;
-			margin-bottom: 1rem;
-		}
-		.review-btn {
-			padding: 0.75rem;
-			font-size: 1rem;
-		}
-		.clear-btn {
-			padding: 0.75rem;
-			font-size: 0.85rem;
 		}
 		.record-card {
-			padding: 0.75rem 1rem;
+			padding: 0.9rem 0.8rem 0.9rem 1rem;
+			gap: 0.6rem;
 		}
 		.problem {
-			font-size: 1.1rem;
-		}
-		.meta {
-			gap: 0.5rem;
-			font-size: 0.7rem;
+			font-size: 1.45rem;
 		}
 	}
 </style>

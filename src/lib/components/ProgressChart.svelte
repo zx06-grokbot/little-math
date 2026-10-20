@@ -28,209 +28,94 @@
 </script>
 
 <div class="progress-chart">
-	<h4>📊 学习进度（近7天）</h4>
+	<h4>🎯 做题记录（这 7 天）</h4>
 	<div class="chart-container">
-		<svg viewBox="0 0 600 200" class="chart-svg">
-			<!-- Y轴网格线 -->
-			{#each [0, 25, 50, 75, 100] as percent}
-				{@const y = 180 - (percent / 100) * 160}
-				<line x1="40" y1={y} x2="580" y2={y} stroke="#e0e0e0" stroke-dasharray="4" />
-				<text x="35" y={y + 4} text-anchor="end" font-size="10" fill="#999">{percent}%</text>
+		<svg viewBox="0 0 600 230" class="chart-svg" role="img" aria-label="这 7 天做题和答对的数量">
+			{#each [0, 50, 100] as percent}
+				{@const y = 200 - (percent / 100) * 160}
+				<line class="grid" x1="20" y1={y} x2="580" y2={y} stroke-dasharray="6" />
 			{/each}
-
-			<!-- X轴 -->
-			<line x1="40" y1="180" x2="580" y2="180" stroke="#ccc" stroke-width="2" />
-
-			<!-- 柱状图 -->
+			<line class="axis" x1="20" y1="200" x2="580" y2="200" stroke-width="2" />
 			{#each data as item, idx}
-				{@const x = 60 + idx * 75}
-				{@const barWidth = 50}
+				{@const x = 40 + idx * 78}
+				{@const barWidth = 56}
 				{@const correctHeight = getBarHeight(item.correctProblems, maxValue)}
 				{@const totalHeight = getBarHeight(item.totalProblems, maxValue)}
-
-				<!-- 总题数柱子（浅色背景） -->
-				<rect
-					x={x}
-					y={180 - totalHeight * 1.6}
-					width={barWidth}
-					height={totalHeight * 1.6}
-					fill="#e8f5e9"
-					rx="4"
-				/>
-
-				<!-- 正确题数柱子（深色） -->
-				<rect
-					x={x}
-					y={180 - correctHeight * 1.6}
-					width={barWidth}
-					height={correctHeight * 1.6}
-					fill="#51cf66"
-					rx="4"
-				/>
-
-				<!-- 日期标签 -->
-				<text x={x + barWidth / 2} y="195" text-anchor="middle" font-size="11" fill="#666">
-					{formatDate(item.date)}
-				</text>
-
-				<!-- 题数标签 -->
-				<text
-					x={x + barWidth / 2}
-					y={180 - totalHeight * 1.6 - 5}
-					text-anchor="middle"
-					font-size="10"
-					fill="#666"
-				>
-					{item.totalProblems}
-				</text>
-
-				<!-- 正确率标签 -->
-				<text
-					x={x + barWidth / 2}
-					y={180 - correctHeight * 1.6 - 18}
-					text-anchor="middle"
-					font-size="9"
-					fill="#51cf66"
-					font-weight="bold"
-				>
-					{item.correctRate}%
-				</text>
+				<rect class="bar-total" x={x} y={200 - totalHeight * 1.6} width={barWidth} height={totalHeight * 1.6} rx="8" />
+				<rect class="bar-correct" x={x} y={200 - correctHeight * 1.6} width={barWidth} height={correctHeight * 1.6} rx="8" />
+				<text class="lbl" x={x + barWidth / 2} y="224" text-anchor="middle" font-size="20">{formatDate(item.date)}</text>
+				{#if item.totalProblems > 0}
+					<text class="num" x={x + barWidth / 2} y={200 - totalHeight * 1.6 - 8} text-anchor="middle" font-size="20" font-weight="bold">
+						{item.correctProblems}/{item.totalProblems}
+					</text>
+				{/if}
 			{/each}
 		</svg>
-
-		<!-- 图例 -->
 		<div class="legend">
-			<div class="legend-item">
-				<div class="legend-color correct"></div>
-				<span>正确题数</span>
-			</div>
-			<div class="legend-item">
-				<div class="legend-color total"></div>
-				<span>总题数</span>
-			</div>
+			<div class="legend-item"><span class="legend-color correct"></span>答对</div>
+			<div class="legend-item"><span class="legend-color total"></span>做了</div>
 		</div>
-	</div>
-
-	<!-- 详细数据 -->
-	<div class="progress-details">
-		{#each data as item}
-			<div class="detail-item">
-				<span class="detail-date">{formatDate(item.date)}</span>
-				<span class="detail-stat">{item.totalProblems} 题</span>
-				<span class="detail-stat correct">{item.correctProblems} 正确</span>
-				<span class="detail-stat rate">{item.correctRate}%</span>
-			</div>
-		{/each}
 	</div>
 </div>
 
 <style>
-	.progress-chart {
-		margin-top: 1.5rem;
+	.progress-chart h4 {
+		margin: 0 0 0.6rem;
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--c-text);
 	}
-
-	h4 {
-		margin: 0 0 1rem;
-		font-size: 14px;
-		font-weight: 600;
-		color: #333;
-	}
-
 	.chart-container {
-		background: #f8f9fa;
-		border-radius: 8px;
-		padding: 1rem;
+		background: var(--c-surface-2);
+		border-radius: var(--c-radius);
+		padding: 0.75rem 0.75rem 0.6rem;
 	}
-
 	.chart-svg {
+		display: block;
 		width: 100%;
 		height: auto;
 	}
-
+	.grid {
+		stroke: var(--c-border);
+	}
+	.axis {
+		stroke: var(--c-muted);
+		opacity: 0.5;
+	}
+	.bar-total {
+		fill: var(--c-chart-2);
+	}
+	.bar-correct {
+		fill: var(--c-chart-1);
+	}
+	.lbl {
+		fill: var(--c-muted);
+	}
+	.num {
+		fill: var(--c-text);
+	}
 	.legend {
 		display: flex;
 		justify-content: center;
 		gap: 1.5rem;
-		margin-top: 1rem;
+		margin-top: 0.5rem;
+		font-size: 1rem;
+		color: var(--c-muted);
 	}
-
 	.legend-item {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		font-size: 12px;
-		color: #666;
+		gap: 0.4rem;
 	}
-
 	.legend-color {
 		width: 16px;
 		height: 16px;
 		border-radius: 4px;
 	}
-
 	.legend-color.correct {
-		background: #51cf66;
+		background: var(--c-chart-1);
 	}
-
 	.legend-color.total {
-		background: #e8f5e9;
-		border: 1px solid #51cf66;
-	}
-
-	.progress-details {
-		display: grid;
-		grid-template-columns: repeat(7, 1fr);
-		gap: 0.5rem;
-		margin-top: 1rem;
-	}
-
-	.detail-item {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 0.5rem;
-		background: #f8f9fa;
-		border-radius: 6px;
-		font-size: 11px;
-	}
-
-	.detail-date {
-		color: #999;
-		margin-bottom: 0.25rem;
-	}
-
-	.detail-stat {
-		color: #666;
-		margin-bottom: 0.125rem;
-	}
-
-	.detail-stat.correct {
-		color: #51cf66;
-		font-weight: 600;
-	}
-
-	.detail-stat.rate {
-		color: #5c7cfa;
-		font-weight: 600;
-	}
-
-	@media (max-width: 768px) {
-		.progress-details {
-			grid-template-columns: repeat(4, 1fr);
-		}
-	}
-
-	@media (max-width: 480px) {
-		.progress-details {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.legend {
-			gap: 1rem;
-		}
-
-		.detail-item {
-			font-size: 10px;
-		}
+		background: var(--c-chart-2);
 	}
 </style>

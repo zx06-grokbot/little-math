@@ -30,9 +30,9 @@ function isInt(v: unknown): v is number {
 }
 
 function intIssue(v: unknown, label: string): string | null {
-	if (v === null || v === undefined || v === '' || (typeof v === 'number' && Number.isNaN(v))) return `请填写${label}`;
-	if (typeof v !== 'number' || !Number.isFinite(v)) return `${label}必须是数字`;
-	if (!Number.isInteger(v)) return `${label}必须是整数`;
+	if (v === null || v === undefined || v === '' || (typeof v === 'number' && Number.isNaN(v))) return `请写上${label}`;
+	if (typeof v !== 'number' || !Number.isFinite(v)) return `${label}要写数字哦`;
+	if (!Number.isInteger(v)) return `${label}要写整数哦`;
 	return null;
 }
 
@@ -44,46 +44,46 @@ export function validateConfig(config: ExerciseConfig): ValidationIssue[] {
 	const mode = config.problemMode;
 
 	// 题量
-	const tc = intIssue(config.totalCount, '总题数');
+	const tc = intIssue(config.totalCount, '一共几道');
 	if (tc) issues.push({ field: 'totalCount', message: tc });
 	else if (config.totalCount < 1 || config.totalCount > TOTAL_COUNT_LIMIT)
-		issues.push({ field: 'totalCount', message: `总题数需在 1～${TOTAL_COUNT_LIMIT} 之间` });
+		issues.push({ field: 'totalCount', message: `一共几道：写 1～${TOTAL_COUNT_LIMIT}` });
 
 	const layout = getLayout(config);
-	const cp = intIssue(config.countPerPage, '每页题数');
+	const cp = intIssue(config.countPerPage, '一张几道');
 	if (cp) issues.push({ field: 'countPerPage', message: cp });
 	else if (config.countPerPage < 1 || config.countPerPage > layout.maxPerPage)
 		issues.push({
 			field: 'countPerPage',
-			message: `当前版式每页最多 ${layout.maxPerPage} 道（一页 A4 纸），请填 1～${layout.maxPerPage}`
+			message: `一张纸最多放 ${layout.maxPerPage} 道，写 1～${layout.maxPerPage} 吧`
 		});
 
 	if (usesOperations(mode) && (!config.operations || config.operations.length === 0)) {
-		issues.push({ field: 'operations', message: '请至少选择一种运算' });
+		issues.push({ field: 'operations', message: '至少选一种题哦' });
 	}
 
 	if (!usesRange(mode)) return issues;
 
 	const { min, max } = config.range ?? ({} as { min: number; max: number });
-	const minErr = intIssue(min, '最小值');
-	const maxErr = intIssue(max, '最大值');
+	const minErr = intIssue(min, '最小的数');
+	const maxErr = intIssue(max, '最大的数');
 	if (minErr) issues.push({ field: 'rangeMin', message: minErr });
 	else if (min < RANGE_MIN_LIMIT || min > RANGE_MAX_LIMIT)
-		issues.push({ field: 'rangeMin', message: `最小值需在 ${RANGE_MIN_LIMIT}～${RANGE_MAX_LIMIT} 之间` });
+		issues.push({ field: 'rangeMin', message: `最小的数：写 ${RANGE_MIN_LIMIT}～${RANGE_MAX_LIMIT}` });
 	if (maxErr) issues.push({ field: 'rangeMax', message: maxErr });
 	else if (max < 1 || max > RANGE_MAX_LIMIT)
-		issues.push({ field: 'rangeMax', message: `最大值需在 1～${RANGE_MAX_LIMIT} 之间` });
+		issues.push({ field: 'rangeMax', message: `最大的数：写 1～${RANGE_MAX_LIMIT}` });
 	if (issues.some((i) => i.field === 'rangeMin' || i.field === 'rangeMax')) return issues;
 
 	if (min >= max) {
-		issues.push({ field: 'range', message: `最小值（${min}）必须小于最大值（${max}）` });
+		issues.push({ field: 'range', message: `最小的数（${min}）要比最大的数（${max}）小哦` });
 		return issues;
 	}
 
 	const range = { min, max, tableMulDiv: !!config.tableMulDiv };
 	if (mode === 'remainder') {
 		if (!isRemainderFeasible(min, max))
-			issues.push({ field: 'range', message: `有余数除法的被除数至少是 ${REMAINDER_MIN_DIVIDEND}，请调大最大值` });
+			issues.push({ field: 'range', message: `最大的数至少写 ${REMAINDER_MIN_DIVIDEND} 才能出有余数的题` });
 		return issues;
 	}
 
@@ -101,7 +101,7 @@ export function validateConfig(config: ExerciseConfig): ValidationIssue[] {
 		if (!ok)
 			issues.push({
 				field: 'range',
-				message: `在 ${min}～${max} 内凑不出 ${config.chainLength} 个数的连续运算（中间结果不能超过最大值），请调小最小值或调大最大值`
+				message: `${min}～${max} 里凑不出 ${config.chainLength} 个数连着算，把最小的数改小或最大的数改大试试`
 			});
 	}
 	return issues;
@@ -110,6 +110,6 @@ export function validateConfig(config: ExerciseConfig): ValidationIssue[] {
 function infeasibleMessage(op: Operation, min: number, max: number, table: boolean): string {
 	const name = OP_NAMES[op];
 	if (op === 'add' || op === 'sub')
-		return `${name}：两个数都不小于 ${min} 时，结果会超过 ${max}。请把最小值调到 ${Math.floor(max / 2)} 以下或调大最大值`;
-	return `${name}：${min}～${max} 内找不到${table ? '表内' : ''}${op === 'mul' ? '积' : '被除数'}合适的题，请扩大范围${table ? '或取消「表内乘除」' : ''}`;
+		return `${name}：两个数都不小于 ${min} 时，答案会超过 ${max}。把最小的数改到 ${Math.floor(max / 2)} 以下，或把最大的数改大`;
+	return `${name}：${min}～${max} 里出不了${table ? '表内' : ''}${name}题，把范围放大一点${table ? '，或去掉「只出表内」' : ''}`;
 }

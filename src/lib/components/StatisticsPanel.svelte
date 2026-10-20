@@ -22,7 +22,7 @@
 	});
 
 	function handleReset() {
-		if (confirm('确定要重置所有统计数据吗？')) {
+		if (confirm('真的要把记录都清零吗？')) {
 			resetStats();
 			stats = getStats();
 			last7Days = getLast7DaysStats();
@@ -44,39 +44,45 @@
 </script>
 
 <div class="stats-container">
-	<button class="stats-toggle" onclick={() => (showPanel = !showPanel)} title="查看统计" data-testid="stats-toggle">
-		<span>📊</span>
+	<button
+		class="stats-toggle"
+		onclick={() => (showPanel = !showPanel)}
+		title="看看记录"
+		aria-label="看看记录"
+		aria-expanded={showPanel}
+		data-testid="stats-toggle"
+	>
+		<span aria-hidden="true">📊</span>
 	</button>
 
 	{#if showPanel}
-		<div class="stats-panel" data-testid="stats-panel">
+		<div class="stats-panel" data-testid="stats-panel" role="dialog" aria-label="我的记录">
 			<div class="stats-header">
-				<h3>📊 使用统计</h3>
-				<button class="close-btn" onclick={() => (showPanel = false)}>×</button>
+				<h3>📊 我的记录</h3>
+				<button class="close-btn" onclick={() => (showPanel = false)} aria-label="关上">✕</button>
 			</div>
 
 			<div class="stats-content">
 				<div class="stats-section">
-					<h4>总览</h4>
 					<div class="stats-grid">
 						<div class="stat-card" data-testid="stat-visits">
 							<div class="stat-value">{stats.totalVisits}</div>
-							<div class="stat-label">访问次数</div>
+							<div class="stat-label">👋 来玩过</div>
 						</div>
 						<div class="stat-card" data-testid="stat-generations">
 							<div class="stat-value">{stats.totalGenerations}</div>
-							<div class="stat-label">生成次数</div>
+							<div class="stat-label">📝 出过题</div>
 						</div>
 						<div class="stat-card" data-testid="stat-prints">
 							<div class="stat-value">{stats.totalPrints}</div>
-							<div class="stat-label">打印次数</div>
+							<div class="stat-label">🖨️ 打印过</div>
 						</div>
 					</div>
 				</div>
 
 				{#if stats.totalGenerations > 0}
 					<div class="stats-section">
-						<h4>运算类型使用</h4>
+						<h4>常做的题</h4>
 						<div class="operation-stats">
 							{#each Object.entries(stats.operationsCount) as [op, count]}
 								{#if count > 0}
@@ -85,7 +91,7 @@
 										<div class="operation-bar">
 											<div class="operation-fill" style="width: {getPercent(count, stats.totalGenerations)}"></div>
 										</div>
-										<div class="operation-count">{count} 次 ({getPercent(count, stats.totalGenerations)})</div>
+										<div class="operation-count">{count} 次</div>
 									</div>
 								{/if}
 							{/each}
@@ -94,15 +100,15 @@
 				{/if}
 
 				<div class="stats-section">
-					<h4>最近7天</h4>
+					<h4>这几天</h4>
 					<div class="daily-stats">
 						{#each last7Days as day}
 							<div class="day-item">
 								<div class="day-date">{formatDate(day.date)}</div>
 								<div class="day-metrics">
-									<span class="metric">👁 {day.visits}</span>
-									<span class="metric">📝 {day.generations}</span>
-									<span class="metric">🖨 {day.prints}</span>
+									<span class="metric" title="来玩">👋 {day.visits}</span>
+									<span class="metric" title="出题">📝 {day.generations}</span>
+									<span class="metric" title="打印">🖨️ {day.prints}</span>
 								</div>
 							</div>
 						{/each}
@@ -113,13 +119,13 @@
 					<ProgressChart data={dailyProgress} />
 				</div>
 			</div>
-			
+
 			<div class="stats-footer">
-				<div class="last-visit">最后访问: {stats.lastVisitDate || '无'}</div>
+				<div class="last-visit">上次来玩：{stats.lastVisitDate || '还没有'}</div>
 				<div class="footer-buttons">
-					<button class="export-btn" onclick={downloadStatisticsJSON} data-testid="stats-export-json">导出 JSON</button>
-					<button class="export-btn" onclick={downloadStatisticsCSV} data-testid="stats-export-csv">导出 CSV</button>
-					<button class="reset-btn" onclick={handleReset} data-testid="stats-reset">重置统计</button>
+					<button class="ui-btn ui-btn-secondary" onclick={downloadStatisticsJSON} data-testid="stats-export-json">💾 存 JSON</button>
+					<button class="ui-btn ui-btn-secondary" onclick={downloadStatisticsCSV} data-testid="stats-export-csv">💾 存表格</button>
+					<button class="ui-btn ui-btn-quiet" onclick={handleReset} data-testid="stats-reset">🧹 清零</button>
 				</div>
 			</div>
 		</div>
@@ -133,478 +139,210 @@
 		right: 20px;
 		z-index: 1000;
 	}
-
 	.stats-toggle {
-		width: 50px;
-		height: 50px;
+		width: 60px;
+		height: 60px;
 		border-radius: 50%;
-		background: var(--fab-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-		border: var(--fab-border, none);
-		color: white;
-		font-size: 24px;
+		background: var(--fab-bg);
+		border: var(--fab-border);
+		font-size: 28px;
 		cursor: pointer;
-		box-shadow: var(--fab-shadow, 0 4px 12px rgba(0, 0, 0, 0.2));
-		transition: all 0.3s ease;
+		box-shadow: var(--fab-shadow);
+		transition: transform 0.2s ease;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
-
 	.stats-toggle:hover {
-		transform: scale(1.1);
-		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+		transform: scale(1.06);
 	}
-
+	.stats-toggle:focus-visible,
+	.close-btn:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 4px var(--c-focus);
+	}
 	.stats-panel {
 		position: absolute;
-		bottom: 60px;
+		bottom: 72px;
 		right: 0;
-		width: 380px;
-		max-height: 80vh;
-		background: white;
-		border-radius: 12px;
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+		width: min(420px, calc(100vw - 40px));
+		max-height: min(80vh, calc(100vh - 120px));
+		background: var(--c-surface);
+		color: var(--c-text);
+		border: var(--c-card-border);
+		border-radius: var(--c-radius-lg);
+		box-shadow: var(--c-shadow-lg);
 		overflow: hidden;
-		animation: slideUp 0.3s ease;
+		animation: slideUp 0.25s ease;
 		display: flex;
 		flex-direction: column;
 	}
-
 	@keyframes slideUp {
 		from {
 			opacity: 0;
-			transform: translateY(20px);
+			transform: translateY(16px);
 		}
 		to {
 			opacity: 1;
 			transform: translateY(0);
 		}
 	}
-
 	.stats-header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 16px 20px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
+		padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+		background: var(--c-primary-soft);
+		color: var(--c-on-primary-soft);
 	}
-
 	.stats-header h3 {
 		margin: 0;
-		font-size: 18px;
-		font-weight: 600;
+		font-size: 1.35rem;
+		font-weight: 800;
 	}
-
 	.close-btn {
-		background: none;
+		width: 48px;
+		height: 48px;
 		border: none;
-		color: white;
-		font-size: 24px;
-		cursor: pointer;
-		padding: 0;
-		width: 28px;
-		height: 28px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		border-radius: 50%;
-		transition: background 0.2s;
+		background: transparent;
+		color: inherit;
+		font-size: 1.4rem;
+		cursor: pointer;
 	}
-
 	.close-btn:hover {
-		background: rgba(255, 255, 255, 0.2);
+		background: var(--c-surface);
 	}
-
 	.stats-content {
-		padding: 16px 20px;
+		padding: 1rem 1.25rem;
 		overflow-y: auto;
 		flex: 1;
 		min-height: 0;
 	}
-
 	.stats-section {
-		margin-bottom: 20px;
+		margin-bottom: 1.25rem;
 	}
-
 	.stats-section h4 {
-		margin: 0 0 12px;
-		font-size: 14px;
-		font-weight: 600;
-		color: #333;
+		margin: 0 0 0.6rem;
+		font-size: 1.1rem;
+		font-weight: 700;
+		color: var(--c-text);
 	}
-
 	.stats-grid {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 12px;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.6rem;
 	}
-
 	.stat-card {
-		background: #f8f9fa;
-		border-radius: 8px;
-		padding: 12px 8px;
+		background: var(--c-surface-2);
+		border-radius: var(--c-radius);
+		padding: 0.8rem 0.3rem;
 		text-align: center;
 	}
-
 	.stat-value {
-		font-size: 24px;
-		font-weight: 700;
-		color: #667eea;
-		margin-bottom: 4px;
+		font-size: 1.8rem;
+		font-weight: 800;
+		color: var(--c-title);
+		line-height: 1.15;
 	}
-
 	.stat-label {
-		font-size: 12px;
-		color: #666;
+		margin-top: 0.2rem;
+		font-size: 0.95rem;
+		color: var(--c-muted);
+		white-space: nowrap;
 	}
-
 	.operation-stats {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 0.5rem;
 	}
-
 	.operation-item {
 		display: flex;
 		align-items: center;
-		gap: 12px;
+		gap: 0.75rem;
+		font-size: 1rem;
 	}
-
 	.operation-name {
-		width: 40px;
-		font-size: 13px;
-		color: #666;
+		width: 3em;
+		color: var(--c-text);
 	}
-
 	.operation-bar {
 		flex: 1;
-		height: 8px;
-		background: #e9ecef;
-		border-radius: 4px;
+		height: 12px;
+		background: var(--c-surface-2);
+		border-radius: 999px;
 		overflow: hidden;
 	}
-
 	.operation-fill {
 		height: 100%;
-		background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-		border-radius: 4px;
+		background: var(--c-chart-1);
+		border-radius: 999px;
 		transition: width 0.3s ease;
 	}
-
 	.operation-count {
-		font-size: 12px;
-		color: #666;
-		min-width: 70px;
+		min-width: 3.5em;
 		text-align: right;
+		color: var(--c-muted);
 	}
-
 	.daily-stats {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 0.35rem;
 	}
-
 	.day-item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 8px 12px;
-		background: #f8f9fa;
-		border-radius: 6px;
+		gap: 0.5rem;
+		padding: 0.45rem 0.75rem;
+		background: var(--c-surface-2);
+		border-radius: var(--ui-radius-sm);
+		font-size: 1rem;
 	}
-
 	.day-date {
-		font-size: 13px;
-		color: #666;
+		color: var(--c-text);
+		font-weight: 600;
+		white-space: nowrap;
 	}
-
 	.day-metrics {
 		display: flex;
-		gap: 12px;
+		gap: 0.9rem;
+		color: var(--c-muted);
+		white-space: nowrap;
 	}
-
-	.metric {
-		font-size: 12px;
-		color: #666;
-	}
-
 	.stats-footer {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 16px 20px;
-		border-top: 1px solid #e9ecef;
-		background: #f8f9fa;
+		padding: 0.9rem 1.25rem 1.1rem;
+		border-top: 2px dashed var(--c-border);
+		background: var(--c-surface);
 	}
-
 	.last-visit {
-		font-size: 12px;
-		color: #999;
-		text-align: center;
+		font-size: 0.95rem;
+		color: var(--c-muted);
+		margin-bottom: 0.6rem;
 	}
-
 	.footer-buttons {
-		display: flex;
-		gap: 8px;
-		justify-content: center;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.5rem;
 	}
-
-	.export-btn {
-		flex: 1;
-		padding: 10px 16px;
-		background: #5c7cfa;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-size: 13px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s;
-		text-align: center;
-	}
-
-	.export-btn:hover {
-		background: #4263eb;
-		transform: translateY(-1px);
-	}
-
-	.reset-btn {
-		flex: 1;
-		padding: 10px 16px;
-		background: #ff6b6b;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-size: 13px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.2s;
-		text-align: center;
-	}
-
-	.reset-btn:hover {
-		background: #fa5252;
-		transform: translateY(-1px);
-	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		.stats-container {
-			bottom: 15px;
-			right: 15px;
-		}
-
-		.stats-toggle {
-			width: 48px;
-			height: 48px;
-			font-size: 22px;
-		}
-
-		.stats-panel {
-			width: 340px;
-			max-height: 85vh;
-			bottom: 55px;
-		}
-
-		.stats-header {
-			padding: 14px 16px;
-		}
-
-		.stats-header h3 {
-			font-size: 16px;
-		}
-
-		.close-btn {
-			width: 26px;
-			height: 26px;
-			font-size: 22px;
-		}
-
-		.stats-content {
-			padding: 14px 16px;
-			overflow-y: auto;
-			max-height: calc(80vh - 55px);
-		}
-
-		.stats-section {
-			margin-bottom: 16px;
-		}
-
-		.stats-section h4 {
-			font-size: 13px;
-		}
-
-		.stats-grid {
-			gap: 10px;
-		}
-
-		.stat-card {
-			padding: 10px 6px;
-		}
-
-		.stat-value {
-			font-size: 20px;
-		}
-
-		.stat-label {
-			font-size: 11px;
-		}
-
-		.operation-item {
-			gap: 10px;
-		}
-
-		.operation-name {
-			width: 36px;
-			font-size: 12px;
-		}
-
-		.operation-count {
-			font-size: 11px;
-			min-width: 60px;
-		}
-
-		.day-item {
-			padding: 6px 10px;
-		}
-
-		.day-date {
-			font-size: 12px;
-		}
-
-		.day-metrics {
-			gap: 10px;
-		}
-
-		.metric {
-			font-size: 11px;
-		}
-
-		.stats-footer {
-			padding: 14px 16px;
-		}
-
-		.last-visit {
-			font-size: 11px;
-		}
-
-		.footer-buttons {
-			gap: 6px;
-		}
-
-		.export-btn {
-			padding: 8px 12px;
-			font-size: 12px;
-		}
-
-		.reset-btn {
-			padding: 8px 12px;
-			font-size: 12px;
-		}
+	.footer-buttons .ui-btn {
+		min-height: 48px;
+		padding: 0 0.4rem;
+		font-size: 1rem;
+		white-space: nowrap;
 	}
 
 	@media (max-width: 480px) {
 		.stats-container {
-			bottom: 10px;
-			right: 10px;
+			bottom: 14px;
+			right: 14px;
 		}
-
-		.stats-toggle {
-			width: 44px;
-			height: 44px;
-			font-size: 20px;
-		}
-
 		.stats-panel {
-			width: calc(100vw - 20px);
-			max-width: 320px;
-			max-height: 85vh;
-			bottom: 50px;
-			right: -10px;
+			width: calc(100vw - 28px);
+			bottom: 70px;
 		}
-
-		.stats-header {
-			padding: 12px 14px;
-		}
-
-		.stats-header h3 {
-			font-size: 15px;
-		}
-
-		.stats-content {
-			padding: 12px 14px;
-			overflow-y: auto;
-			max-height: calc(80vh - 50px);
-		}
-
-		.stats-grid {
-			grid-template-columns: repeat(3, 1fr);
-			gap: 8px;
-		}
-
-		.stat-card {
-			padding: 8px 4px;
-		}
-
-		.stat-value {
-			font-size: 18px;
-		}
-
-		.stat-label {
-			font-size: 10px;
-		}
-
-		.operation-item {
-			gap: 8px;
-		}
-
-		.operation-name {
-			width: 32px;
-			font-size: 11px;
-		}
-
-		.operation-count {
-			font-size: 10px;
-			min-width: 55px;
-		}
-
-		.day-item {
-			padding: 6px 8px;
-		}
-
-		.day-date {
-			font-size: 11px;
-		}
-
 		.day-metrics {
-			gap: 8px;
-		}
-
-		.metric {
-			font-size: 10px;
-		}
-
-		.stats-footer {
-			padding: 12px 14px;
-		}
-
-		.last-visit {
-			font-size: 10px;
-		}
-
-		.footer-buttons {
-			gap: 6px;
-		}
-
-		.export-btn {
-			padding: 8px 10px;
-			font-size: 12px;
-		}
-
-		.reset-btn {
-			padding: 8px 10px;
-			font-size: 12px;
+			gap: 0.6rem;
 		}
 	}
 

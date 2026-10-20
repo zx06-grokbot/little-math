@@ -22,51 +22,41 @@
 	.compare-input {
 		display: flex;
 		justify-content: center;
-		gap: 1.5rem;
+		gap: 1.25rem;
 	}
 	.symbol-btn {
-		width: 80px;
-		height: 80px;
+		width: 88px;
+		height: 88px;
+		font: inherit;
 		font-size: 3rem;
-		font-weight: bold;
-		background: linear-gradient(135deg, #5c7cfa, #845ef7);
-		color: white;
-		border: none;
-		border-radius: 16px;
+		font-weight: 800;
+		line-height: 1;
+		color: var(--c-on-primary-soft);
+		background: var(--c-primary-soft);
+		border: 3px solid var(--c-primary);
+		border-radius: var(--c-radius-lg);
+		box-shadow: var(--c-shadow);
 		cursor: pointer;
-		font-family: 'Comic Sans MS', cursive;
 		transition: transform 0.1s;
 	}
 	.symbol-btn:hover {
-		transform: scale(1.1);
+		transform: translateY(-2px);
 	}
 	.symbol-btn:active {
 		transform: scale(0.95);
 	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		.compare-input {
-			gap: 1rem;
-		}
-
-		.symbol-btn {
-			width: 65px;
-			height: 65px;
-			font-size: 2.5rem;
-		}
+	.symbol-btn:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 4px var(--c-focus);
 	}
-
 	@media (max-width: 480px) {
 		.compare-input {
-			gap: 0.75rem;
+			gap: 0.9rem;
 		}
-
 		.symbol-btn {
-			width: 55px;
-			height: 55px;
-			font-size: 2rem;
-			border-radius: 12px;
+			width: 76px;
+			height: 76px;
+			font-size: 2.6rem;
 		}
 	}
 </style>

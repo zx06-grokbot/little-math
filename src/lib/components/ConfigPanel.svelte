@@ -8,7 +8,6 @@
 	import { REMAINDER_DIVISOR_MAX, REMAINDER_DIVISOR_MIN } from '$lib/generators/remainder';
 	import { zh } from '$lib/i18n/zh';
 	import { track } from '$lib/actions/track';
-	import ThemeSelector from '$lib/components/ThemeSelector.svelte';
 
 	const MAKE_TARGET_OPTIONS: MakeTargetValue[] = [10, 20, 100];
 
@@ -21,8 +20,6 @@
 		onPrint: () => void;
 		onExportPdf?: () => void;
 		isExportingPdf?: boolean;
-		theme: string;
-		onThemeChange: (theme: string) => void;
 	}
 
 	let {
@@ -33,9 +30,7 @@
 		onGenerate,
 		onPrint,
 		onExportPdf,
-		isExportingPdf = false,
-		theme,
-		onThemeChange
+		isExportingPdf = false
 	}: Props = $props();
 
 	const t = zh.config;
@@ -81,19 +76,15 @@
 
 	const rangeHints = $derived.by(() => {
 		if (config.problemMode === 'remainder')
-			return [`被除数在范围内；除数 ${REMAINDER_DIVISOR_MIN}～${REMAINDER_DIVISOR_MAX}；余数小于除数`];
+			return [`除数 ${REMAINDER_DIVISOR_MIN}～${REMAINDER_DIVISOR_MAX}，余数比除数小`];
 		if (config.problemMode === 'chain')
-			return ['按「先乘除、后加减」计算', '每一步的中间结果和答案都在 0～最大值 之间，除法都能整除'];
+			return ['先算乘除，再算加减', '每一步都不超过最大的数，除法都能除尽'];
 		return config.operations.map((op) => RANGE_RULE_TEXT[op]);
 	});
 </script>
 
 <div class="config-panel">
-	<h2>配置</h2>
-
-	<div class="config-section print-theme-section">
-		<ThemeSelector selectedTheme={theme} onChange={onThemeChange} />
-	</div>
+	<h2>出题啦</h2>
 
 	<div class="config-section">
 		<label>
@@ -168,7 +159,7 @@
 			</label>
 		{:else}
 			<span class="label"><span class="ico" aria-hidden="true">📐</span>{t.exerciseType}</span>
-			<p class="hint">该模式只支持横式</p>
+			<p class="hint">这个只能横着写</p>
 		{/if}
 	</div>
 
@@ -204,7 +195,7 @@
 			{#if hasMulDiv}
 				<label class="checkbox-label table-opt">
 					<input type="checkbox" bind:checked={config.tableMulDiv} data-testid="table-muldiv" />
-					乘除只出表内（因数、除数和商不超过 9）
+					只出表内乘除（9 以内）
 				</label>
 			{/if}
 		</div>
@@ -212,7 +203,7 @@
 
 	{#if showRange}
 		<div class="config-section">
-			<span class="label"><span class="ico" aria-hidden="true">🔢</span>{config.problemMode === 'remainder' ? '被除数范围' : t.range}</span>
+			<span class="label"><span class="ico" aria-hidden="true">🔢</span>{config.problemMode === 'remainder' ? '被除数多大' : t.range}</span>
 			<div class="range-inputs">
 				<label>
 					{t.rangeMin}
@@ -264,7 +255,7 @@
 					</label>
 				{/each}
 			</div>
-			<p class="hint">三个滑块互不影响，右侧是实际占比{ratioTotal <= 0 ? '（全为 0 时只留空结果）' : ''}</p>
+			<p class="hint">拖一拖，右边是会出现的比例{ratioTotal <= 0 ? '（都为 0 时只空答案）' : ''}</p>
 		</div>
 	{/if}
 
@@ -298,7 +289,7 @@
 			/>
 		</label>
 		{#each errorsFor('countPerPage') as msg}<p class="error" role="alert">{msg}</p>{/each}
-		<p class="hint">当前版式一页 A4 最多 {layout.maxPerPage} 道</p>
+		<p class="hint">一张纸最多 {layout.maxPerPage} 道</p>
 		{#if layoutNote}<p class="note" data-testid="layout-note">{layoutNote}</p>{/if}
 	</div>
 
@@ -307,13 +298,13 @@
 			<span class="lbl"><span class="ico" aria-hidden="true">✏️</span>{t.customTitle}</span>
 			<input type="text" bind:value={config.customTitle} placeholder={autoTitle} maxlength="30" data-testid="custom-title" />
 		</label>
-		<p class="hint">留空则按设置自动生成：{autoTitle}</p>
+		<p class="hint">不写就叫：{autoTitle}</p>
 	</div>
 
 	<div class="config-section">
 		<label>
 			<span class="lbl"><span class="ico" aria-hidden="true">🙂</span>{t.studentName}</span>
-			<input type="text" bind:value={config.studentName} placeholder="请输入姓名" data-testid="student-name" />
+			<input type="text" bind:value={config.studentName} placeholder="写上名字" data-testid="student-name" />
 		</label>
 	</div>
 
@@ -355,83 +346,80 @@
 				data-testid="export-pdf"
 				use:track={{ type: 'pdf' }}
 			>
-				<span class="ico" aria-hidden="true">📄</span>{isExportingPdf ? '导出中...' : zh.buttons.exportPdf}
+				<span class="ico" aria-hidden="true">📄</span>{isExportingPdf ? '正在存…' : zh.buttons.exportPdf}
 			</button>
 		{/if}
 	</div>
-	{#if !canPrint}<p class="error center">请先修正上面标红的设置</p>{/if}
+	{#if !canPrint}<p class="error center">把上面红色的地方改一下就好啦</p>{/if}
 </div>
 
 <style>
 	/* 所有 var(--cp-*, 默认值)：默认值即原版样式；界面风格 A/B/C 在 $lib/styles/ui-themes.css 里覆盖 */
 	.config-panel {
-		padding: var(--cp-pad, 1.5rem);
-		background: var(--cp-bg, linear-gradient(180deg, #fff5f5 0%, #fff9db 100%));
-		border-radius: var(--cp-radius, 16px);
+		padding: var(--cp-pad);
+		background: var(--cp-bg);
+		border-radius: var(--cp-radius);
 		height: fit-content;
-		border: var(--cp-border, 2px solid #ffc078);
-		box-shadow: var(--cp-shadow, none);
-		font-family: var(--cp-font, 'Comic Sans MS', cursive, sans-serif);
-		color: var(--cp-fg, inherit);
+		border: var(--cp-border);
+		box-shadow: var(--cp-shadow);
+		font-family: var(--cp-font);
+		color: var(--cp-fg);
 	}
 
 	h2 {
-		margin: var(--cp-h2-margin, 0 0 1.5rem);
+		margin: var(--cp-h2-margin);
 		padding-bottom: var(--cp-h2-pb, 0);
 		border-bottom: var(--cp-h2-border, none);
-		font-size: var(--cp-h2-size, 1.4rem);
+		font-size: var(--cp-h2-size);
 		font-family: var(--cp-h2-font, inherit);
 		font-weight: var(--cp-h2-weight, bold);
 		letter-spacing: var(--cp-h2-ls, normal);
-		color: var(--cp-h2-fg, #ff6b6b);
+		color: var(--cp-h2-fg);
 		text-align: var(--cp-h2-align, center);
 	}
 
 	h2::before {
-		content: var(--cp-h2-before, '⚙️ ');
+		content: var(--cp-h2-before);
 	}
 
 	.config-section {
-		margin-bottom: var(--cp-gap, 1.25rem);
-	}
-	.print-theme-section {
-		display: var(--cp-print-theme-display, block);
+		margin-bottom: var(--cp-gap);
 	}
 
 	.config-section > label {
 		display: flex;
 		flex-direction: column;
-		gap: var(--cp-label-gap, 0.5rem);
-		font-size: var(--cp-label-size, 0.875rem);
-		font-weight: var(--cp-label-weight, normal);
-		color: var(--cp-label-fg, #555);
+		gap: var(--cp-label-gap);
+		font-size: var(--cp-label-size);
+		font-weight: var(--cp-label-weight);
+		color: var(--cp-label-fg);
 	}
 
 	.label {
-		font-size: var(--cp-label-size, 0.875rem);
-		font-weight: var(--cp-label-weight, normal);
-		color: var(--cp-label-fg, #555);
+		font-size: var(--cp-label-size);
+		font-weight: var(--cp-label-weight);
+		color: var(--cp-label-fg);
 		display: block;
-		margin-bottom: var(--cp-label-gap, 0.5rem);
+		margin-bottom: var(--cp-label-gap);
 	}
 
 	.lbl {
-		display: var(--cp-lbl-display, block);
+		display: var(--cp-lbl-display);
 		align-items: center;
 	}
 
 	/* 标签 / 按钮前的小图标：原版不显示 */
 	.ico {
-		display: var(--cp-ico-display, none);
+		display: var(--cp-ico-display);
 		align-items: center;
 		justify-content: center;
 		flex: 0 0 auto;
-		width: var(--cp-ico-size, 1.6em);
-		height: var(--cp-ico-size, 1.6em);
+		width: var(--cp-ico-size);
+		height: var(--cp-ico-size);
 		margin-right: 0.45em;
 		border-radius: var(--cp-ico-radius, 50%);
-		background: var(--cp-ico-bg, transparent);
-		font-size: var(--cp-ico-font, 1em);
+		background: var(--cp-ico-bg);
+		font-size: var(--cp-ico-font);
 		line-height: 1;
 		filter: var(--cp-ico-filter, none);
 	}
@@ -446,11 +434,11 @@
 	select,
 	input[type='number'],
 	input[type='text'] {
-		padding: var(--cp-input-pad, 0.5rem);
-		min-height: var(--cp-input-h, auto);
-		border: var(--cp-input-border, 1px solid #ddd);
-		border-radius: var(--cp-input-radius, 4px);
-		font-size: var(--cp-input-size, 1rem);
+		padding: var(--cp-input-pad);
+		min-height: var(--cp-input-h);
+		border: var(--cp-input-border);
+		border-radius: var(--cp-input-radius);
+		font-size: var(--cp-input-size);
 		width: 100%;
 		box-sizing: border-box;
 		transition:
@@ -477,44 +465,44 @@
 	}
 	input[type='checkbox'],
 	input[type='range'] {
-		accent-color: var(--cp-accent, auto);
+		accent-color: var(--cp-accent);
 	}
 	input[type='checkbox'] {
-		width: var(--cp-check-size, auto);
-		height: var(--cp-check-size, auto);
-		margin: var(--cp-check-margin, 3px 3px 3px 4px);
+		width: var(--cp-check-size);
+		height: var(--cp-check-size);
+		margin: var(--cp-check-margin);
 	}
 
 	.checkbox-group {
-		display: var(--cp-chk-group-display, flex);
+		display: var(--cp-chk-group-display);
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		flex-wrap: wrap;
-		gap: var(--cp-chk-group-gap, 0.75rem);
+		gap: var(--cp-chk-group-gap);
 	}
 
 	.checkbox-label {
 		display: flex;
 		align-items: center;
 		gap: 0.35rem;
-		font-size: var(--cp-check-label-size, 0.875rem);
+		font-size: var(--cp-check-label-size);
 		color: var(--cp-check-fg, inherit);
 		cursor: pointer;
 	}
 	/* 单个勾选项（显示日期 / 答案页 / 表内）：原版保持竖排，A/B/C 横排成一整条可点区域 */
 	.config-section > label.checkbox-label {
-		flex-direction: var(--cp-check-dir, column);
+		flex-direction: var(--cp-check-dir);
 		justify-content: flex-start;
-		gap: var(--cp-check-gap, 0.5rem);
-		color: var(--cp-check-fg, var(--cp-label-fg, #555));
+		gap: var(--cp-check-gap);
+		color: var(--cp-check-fg, var(--cp-label-fg));
 	}
 	/* 运算多选：A/B/C 下做成大块可点的「胶囊」 */
 	.config-section > label.checkbox-label,
 	.checkbox-group .checkbox-label {
-		min-height: var(--cp-chip-h, auto);
-		padding: var(--cp-chip-pad, 0);
-		border: var(--cp-chip-border, none);
-		border-radius: var(--cp-chip-radius, 0);
-		background: var(--cp-chip-bg, transparent);
+		min-height: var(--cp-chip-h);
+		padding: var(--cp-chip-pad);
+		border: var(--cp-chip-border);
+		border-radius: var(--cp-chip-radius);
+		background: var(--cp-chip-bg);
 		box-sizing: border-box;
 	}
 	:global(html[data-ui-theme]) .config-section > label.checkbox-label:has(input:checked),
@@ -535,8 +523,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
-		font-size: var(--cp-small-size, 0.75rem);
-		color: var(--cp-small-fg, #777);
+		font-size: var(--cp-small-size);
+		color: var(--cp-small-fg);
 	}
 
 	.ratio-inputs {
@@ -547,15 +535,16 @@
 
 	.ratio-inputs label {
 		display: grid;
-		grid-template-columns: 80px 1fr 40px;
+		grid-template-columns: 3.2em 1fr 3em;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: var(--cp-small-size, 0.75rem);
-		color: var(--cp-small-fg, inherit);
+		min-height: 44px;
+		font-size: 1rem;
+		color: var(--cp-small-fg);
 	}
 
 	.error {
-		color: var(--cp-error-fg, #e03131);
+		color: var(--cp-error-fg);
 		font-size: 0.8rem;
 		margin: 0.35rem 0 0;
 	}
@@ -564,18 +553,18 @@
 	}
 	.hint,
 	.note {
-		color: var(--cp-hint-fg, #888);
-		font-size: var(--cp-hint-size, 0.75rem);
+		color: var(--cp-hint-fg);
+		font-size: var(--cp-hint-size);
 		margin: 0.35rem 0 0;
 	}
 	.note {
-		color: var(--cp-note-fg, #e8590c);
+		color: var(--cp-note-fg);
 	}
 	.hint-list {
 		margin: 0.4rem 0 0;
 		padding-left: 1.1rem;
-		color: var(--cp-hint-fg, #888);
-		font-size: var(--cp-hint-size, 0.75rem);
+		color: var(--cp-hint-fg);
+		font-size: var(--cp-hint-size);
 	}
 	input.invalid,
 	.checkbox-group.invalid {
@@ -585,7 +574,7 @@
 	}
 	.table-opt {
 		margin-top: 0.5rem;
-		font-size: var(--cp-hint-size, 0.8rem);
+		font-size: var(--cp-hint-size);
 	}
 
 	.ratio-inputs input[type='range'] {
@@ -603,12 +592,12 @@
 	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-webkit-slider-runnable-track {
 		height: 8px;
 		border-radius: 999px;
-		background: var(--cp-range-track, #e5e7eb);
+		background: var(--cp-range-track);
 	}
 	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-moz-range-track {
 		height: 8px;
 		border-radius: 999px;
-		background: var(--cp-range-track, #e5e7eb);
+		background: var(--cp-range-track);
 	}
 	:global(html[data-ui-theme]) .ratio-inputs input[type='range']::-webkit-slider-thumb {
 		-webkit-appearance: none;
@@ -630,10 +619,10 @@
 	}
 
 	.button-group {
-		display: var(--cp-btns-display, flex);
+		display: var(--cp-btns-display);
 		grid-template-columns: 1fr 1fr;
-		gap: var(--cp-btns-gap, 0.75rem);
-		margin-top: var(--cp-btns-mt, 1.5rem);
+		gap: var(--cp-btns-gap);
+		margin-top: var(--cp-btns-mt);
 	}
 
 	.btn {
@@ -642,10 +631,10 @@
 		align-items: center;
 		justify-content: center;
 		padding: var(--cp-btn-pad, 0.75rem 1rem);
-		min-height: var(--cp-btn-h, auto);
+		min-height: var(--cp-btn-h);
 		border: none;
-		border-radius: var(--cp-btn-radius, 6px);
-		font-size: var(--cp-btn-size, 1rem);
+		border-radius: var(--cp-btn-radius);
+		font-size: var(--cp-btn-size);
 		cursor: pointer;
 		transition:
 			background-color 0.2s,
@@ -654,52 +643,52 @@
 	}
 	/* A/B/C：主按钮「生成」占满一行，打印 / PDF 并排 */
 	.btn.primary {
-		grid-column: var(--cp-primary-span, auto);
+		grid-column: var(--cp-primary-span);
 	}
 
 	.btn.primary {
-		background: var(--cp-btn1-bg, linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%));
-		color: var(--cp-btn1-fg, white);
+		background: var(--cp-btn1-bg);
+		color: var(--cp-btn1-fg);
 		border: var(--cp-btn1-border, none);
-		font-weight: var(--cp-btn-weight, 600);
-		box-shadow: var(--cp-btn1-shadow, 0 3px 8px rgba(255, 107, 107, 0.4));
+		font-weight: var(--cp-btn-weight);
+		box-shadow: var(--cp-btn1-shadow);
 	}
 
 	.btn.primary:hover {
-		transform: var(--cp-btn-hover-transform, translateY(-1px));
-		background: var(--cp-btn1-hover-bg, var(--cp-btn1-bg, linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%)));
-		box-shadow: var(--cp-btn1-hover-shadow, 0 4px 12px rgba(255, 107, 107, 0.5));
+		transform: var(--cp-btn-hover-transform);
+		background: var(--cp-btn1-hover-bg);
+		box-shadow: var(--cp-btn1-hover-shadow);
 	}
 
 	.btn.secondary {
-		background: var(--cp-btn2-bg, linear-gradient(135deg, #51cf66 0%, #20c997 100%));
-		color: var(--cp-btn2-fg, white);
+		background: var(--cp-btn2-bg);
+		color: var(--cp-btn2-fg);
 		border: var(--cp-btn2-border, none);
-		font-weight: var(--cp-btn-weight, 600);
-		box-shadow: var(--cp-btn2-shadow, 0 3px 8px rgba(81, 207, 102, 0.4));
+		font-weight: var(--cp-btn-weight);
+		box-shadow: var(--cp-btn2-shadow);
 	}
 
 	.btn.secondary:hover {
-		transform: var(--cp-btn-hover-transform, translateY(-1px));
-		background: var(--cp-btn2-hover-bg, var(--cp-btn2-bg, linear-gradient(135deg, #51cf66 0%, #20c997 100%)));
-		box-shadow: var(--cp-btn2-hover-shadow, 0 4px 12px rgba(81, 207, 102, 0.5));
+		transform: var(--cp-btn-hover-transform);
+		background: var(--cp-btn2-hover-bg);
+		box-shadow: var(--cp-btn2-hover-shadow);
 	}
 
 	.btn.pdf {
-		background: var(--cp-btn3-bg, linear-gradient(135deg, #e74c3c 0%, #c0392b 100%));
-		color: var(--cp-btn3-fg, white);
+		background: var(--cp-btn3-bg);
+		color: var(--cp-btn3-fg);
 		border: var(--cp-btn3-border, none);
-		font-weight: var(--cp-btn-weight, 600);
-		box-shadow: var(--cp-btn3-shadow, 0 3px 8px rgba(231, 76, 60, 0.4));
+		font-weight: var(--cp-btn-weight);
+		box-shadow: var(--cp-btn3-shadow);
 	}
 
 	.btn.pdf:hover:not(:disabled) {
-		transform: var(--cp-btn-hover-transform, translateY(-1px));
-		background: var(--cp-btn3-hover-bg, var(--cp-btn3-bg, linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)));
-		box-shadow: var(--cp-btn3-hover-shadow, 0 4px 12px rgba(231, 76, 60, 0.5));
+		transform: var(--cp-btn-hover-transform);
+		background: var(--cp-btn3-hover-bg);
+		box-shadow: var(--cp-btn3-hover-shadow);
 	}
 	.btn:focus-visible {
-		outline: 3px solid var(--cp-accent, #1c7ed6);
+		outline: 3px solid var(--cp-accent);
 		outline-offset: 2px;
 	}
 
@@ -746,15 +735,10 @@
 		}
 
 		.range-inputs {
-			grid-template-columns: 1fr;
 			gap: 0.5rem;
 		}
 
-		.ratio-inputs label {
-			grid-template-columns: 60px 1fr 35px;
-			gap: 0.4rem;
-			font-size: 0.7rem;
-		}
+
 
 		.button-group {
 			flex-direction: column;
@@ -778,10 +762,7 @@
 			font-size: 1.1rem;
 		}
 
-		.ratio-inputs label {
-			grid-template-columns: 50px 1fr 30px;
-			font-size: 0.65rem;
-		}
+
 
 		.btn {
 			padding: 0.75rem;

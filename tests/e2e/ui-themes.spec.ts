@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { SHOTS, hasPoppler, openHome, setConfig } from './helpers';
 
-/** 界面风格 A/B/C：切换方式、打印黑白、原版不受影响 */
+/** 三个主题（糖果/森林/海洋）：切换方式、旧值回落、打印黑白 */
 
 const BLACK = 'rgb(0, 0, 0)';
 
@@ -59,20 +59,79 @@ for (const theme of ['a', 'b', 'c'] as const) {
 	});
 }
 
-test('界面风格切换按钮：切到 B 再回原版，原版不设 data-ui-theme', async ({ page }) => {
+test('换颜色按钮：切到森林写进 URL；刷新后保持', async ({ page }) => {
 	await setConfig(page, {});
 	await openHome(page);
 	await page.getByTestId('ui-theme-b').click();
 	await expect(page.locator('html')).toHaveAttribute('data-ui-theme', 'b');
 	expect(new URL(page.url()).searchParams.get('theme')).toBe('b');
-	await page.getByTestId('ui-theme-classic').click();
-	await expect(page.locator('html')).not.toHaveAttribute('data-ui-theme', /.*/);
-	expect(new URL(page.url()).searchParams.get('theme')).toBeNull();
-	// 刷新后仍是原版
-	await page.reload();
+	await page.goto('/');
 	await page.waitForSelector('[data-testid=sheet-page]');
-	await expect(page.locator('html')).not.toHaveAttribute('data-ui-theme', /.*/);
+	await expect(page.locator('html')).toHaveAttribute('data-ui-theme', 'b');
+	// 原版已移除
+	await expect(page.getByTestId('ui-theme-classic')).toHaveCount(0);
+	await expect(page.getByTestId('theme-selector')).toHaveCount(0);
 });
+
+test('主题名：只有糖果/森林/海洋三个，界面上没有英文字母', async ({ page }) => {
+	await setConfig(page, {});
+	await openHome(page);
+	const group = page.getByRole('radiogroup', { name: '换颜色' });
+	await expect(group.getByRole('radio')).toHaveCount(3);
+	const text = (await group.innerText()).replace(/\s+/g, '');
+	expect(text).toContain('糖果');
+	expect(text).toContain('森林');
+	expect(text).toContain('海洋');
+	expect(text).not.toMatch(/[A-Za-z]/);
+	expect(text).not.toContain('原版');
+});
+
+for (const [q, want] of [
+	['classic', 'a'],
+	['zzz', 'a'],
+	['candy', 'a'],
+	['forest', 'b'],
+	['ocean', 'c'],
+	[encodeURIComponent('海洋'), 'c']
+] as const) {
+	test(`?theme=${q} → ${want}`, async ({ page }) => {
+		await page.goto(`/?theme=${q}`);
+		await expect(page.locator('html')).toHaveAttribute('data-ui-theme', want);
+		await expect(page.getByTestId(`ui-theme-${want}`)).toHaveAttribute('aria-checked', 'true');
+	});
+}
+
+test('旧的 localStorage（classic / 乱码）回落到糖果', async ({ page }) => {
+	for (const v of ['classic', 'x']) {
+		await page.addInitScript((val) => {
+			if (!sessionStorage.getItem('seeded')) {
+				localStorage.setItem('little-math-ui-theme', val);
+				sessionStorage.setItem('seeded', '1');
+			}
+		}, v);
+		await page.goto('/');
+		await expect(page.locator('html')).toHaveAttribute('data-ui-theme', 'a');
+		await page.evaluate(() => sessionStorage.clear());
+	}
+});
+
+for (const route of ['/', '/practice', '/wrong-book', '/favorites']) {
+	test(`每个页面都有主题：${route}`, async ({ page }) => {
+		await page.goto(`${route}?theme=c`);
+		await expect(page.locator('html')).toHaveAttribute('data-ui-theme', 'c');
+		await expect(page.getByTestId('app-header')).toBeVisible();
+		const font = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+		expect(font).not.toMatch(/Comic Sans/);
+		// 可点的按钮/链接不小于 44px
+		const small = await page.evaluate(() =>
+			[...document.querySelectorAll<HTMLElement>('button, a, select, input:not([type=checkbox]):not([type=radio]):not([type=range])')]
+				.filter((el) => el.offsetParent !== null && !el.closest('.sheet-container'))
+				.map((el) => ({ h: el.getBoundingClientRect().height, t: (el.textContent || el.getAttribute('aria-label') || el.tagName).trim().slice(0, 20) }))
+				.filter((r) => r.h > 0 && r.h < 44)
+		);
+		expect(small).toEqual([]);
+	});
+}
 
 test('界面风格 a：导出 PDF 也是黑字白底（括号 / 标题 emoji 不带颜色）', async ({ page }) => {
 	test.skip(!hasPoppler(), '需要 poppler（pdftoppm）');

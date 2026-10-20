@@ -240,8 +240,8 @@ export function sampleBinaryWithResult(
 
 /** 规则说明（显示在界面上） */
 export const RANGE_RULE_TEXT: Record<Operation, string> = {
-	add: '加法：两个加数和结果都在范围内（和不超过最大值）',
-	sub: '减法：被减数、减数和差都在范围内（不出负数）',
-	mul: '乘法：积在范围内，因数从 2 起',
-	div: '除法：被除数在范围内且能整除，除数和商从 2 起'
+	add: '加法：答案不超过最大的数',
+	sub: '减法：不会减成负数',
+	mul: '乘法：答案在范围里，从 2 开始乘',
+	div: '除法：都能除尽，从 2 开始除'
 };

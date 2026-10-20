@@ -1,61 +1,62 @@
 /**
- * 界面风格（预览用）：只换「外壳」的颜色 / 底色 / 圆角 / 间距，以及卷面在屏幕上的配色。
- * 不改横式数字槽、括号、竖式的对齐逻辑；打印 / 导出 PDF 时一律黑字白底。
+ * 界面风格（内部 id → 界面名）：a 🍬糖果（默认，柔和粉彩）/ b 🌳森林（米白纸 + 墨绿）/ c 🌊海洋（白底 + 蓝）。
+ * 界面上只显示「糖果 / 森林 / 海洋」，不出现字母。
+ * 全站页面（首页、在线练习、错题本、收藏、统计面板、提示）都用 $lib/styles/ui-themes.css 里的 CSS 变量；
+ * 打印 / 导出 PDF 一律黑字白底。
  *
- * 选择方式：页面顶部「界面风格」切换，或网址 ?theme=a|b|c（?theme=classic 恢复原版）。
- * 选择会记在 localStorage，并由 app.html 里的内联脚本在首屏前写到 <html data-ui-theme>，避免闪烁。
+ * 选择方式：页头切换，或网址 ?theme=a|b|c（也认 candy / forest / ocean）；其它值（含旧的 classic）一律回到糖果。
+ * 选择记在 localStorage，并由 app.html 里的内联脚本在首屏前写到 <html data-ui-theme>，避免闪烁。
  */
-export type UiThemeId = 'classic' | 'a' | 'b' | 'c';
+export type UiThemeId = 'a' | 'b' | 'c';
 
 export interface UiTheme {
 	id: UiThemeId;
 	name: string;
-	icon: string;
 	/** 窄屏用的短名 */
 	short: string;
+	icon: string;
 	desc: string;
+	/** 网址里也认的英文名 */
+	alias: string;
 }
 
 export const UI_THEMES: UiTheme[] = [
-	{ id: 'classic', name: '原版', short: '原版', icon: '🧮', desc: '当前线上样式' },
-	{ id: 'a', name: '清新童趣', short: '童趣', icon: '🎈', desc: '柔和粉彩、圆角卡片' },
-	{ id: 'b', name: '纸感学习本', short: '纸感', icon: '📒', desc: '米白纸张、墨绿点缀' },
-	{ id: 'c', name: '现代扁平', short: '扁平', icon: '🔷', desc: '清爽对比、利落间距' }
+	{ id: 'a', name: '糖果', short: '糖果', icon: '🍬', desc: '粉粉的糖果色', alias: 'candy' },
+	{ id: 'b', name: '森林', short: '森林', icon: '🌳', desc: '绿绿的大森林', alias: 'forest' },
+	{ id: 'c', name: '海洋', short: '海洋', icon: '🌊', desc: '蓝蓝的大海', alias: 'ocean' }
 ];
 
+export const DEFAULT_UI_THEME: UiThemeId = 'a';
 export const UI_THEME_STORAGE_KEY = 'little-math-ui-theme';
 
-export function parseUiTheme(v: string | null | undefined): UiThemeId | null {
+/** 认 a / b / c 和 candy / forest / ocean（也认中文名）；其它（空、classic、乱填）都回到默认糖果 */
+export function parseUiTheme(v: string | null | undefined): UiThemeId {
 	const s = (v ?? '').trim().toLowerCase();
-	if (s === 'a' || s === 'b' || s === 'c') return s;
-	if (s === 'classic' || s === 'default' || s === 'original') return 'classic';
-	return null;
+	const hit = UI_THEMES.find((t) => t.id === s || t.alias === s || t.name === s);
+	return hit ? hit.id : DEFAULT_UI_THEME;
 }
 
-/** 写到 <html>：原版不设属性，保证原版样式完全不变 */
 export function applyUiTheme(id: UiThemeId) {
 	if (typeof document === 'undefined') return;
-	const el = document.documentElement;
-	if (id === 'classic') el.removeAttribute('data-ui-theme');
-	else el.setAttribute('data-ui-theme', id);
+	document.documentElement.setAttribute('data-ui-theme', parseUiTheme(id));
 }
 
 export function currentUiTheme(): UiThemeId {
-	if (typeof document === 'undefined') return 'classic';
-	return parseUiTheme(document.documentElement.getAttribute('data-ui-theme')) ?? 'classic';
+	if (typeof document === 'undefined') return DEFAULT_UI_THEME;
+	return parseUiTheme(document.documentElement.getAttribute('data-ui-theme'));
 }
 
 export function setUiTheme(id: UiThemeId) {
-	applyUiTheme(id);
+	const t = parseUiTheme(id);
+	applyUiTheme(t);
 	try {
-		localStorage.setItem(UI_THEME_STORAGE_KEY, id);
+		localStorage.setItem(UI_THEME_STORAGE_KEY, t);
 	} catch {
 		/* 隐私模式等忽略 */
 	}
 	try {
 		const url = new URL(window.location.href);
-		if (id === 'classic') url.searchParams.delete('theme');
-		else url.searchParams.set('theme', id);
+		url.searchParams.set('theme', t);
 		history.replaceState(history.state, '', url);
 	} catch {
 		/* ignore */

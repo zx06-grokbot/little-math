@@ -42,79 +42,63 @@
 		bind:this={inputEl}
 		bind:value
 		type="number"
-		placeholder="输入答案"
+		placeholder="?"
+		aria-label="写答案"
+		inputmode="numeric"
 		onkeydown={handleKeydown}
 	/>
-	<button onclick={handleSubmit}>确定</button>
+	<button class="submit ui-btn ui-btn-primary" onclick={handleSubmit}>好了 ✅</button>
 </div>
 
 <style>
+	input::-webkit-outer-spin-button,
+	input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	input[type='number'] {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
 	.answer-input {
 		display: flex;
 		gap: 1rem;
 		justify-content: center;
+		align-items: stretch;
+		flex-wrap: wrap;
 	}
 	input {
-		font-size: 2rem;
-		width: 150px;
-		padding: 0.75rem 1rem;
-		border: 3px solid #5c7cfa;
-		border-radius: 12px;
+		width: 9rem;
+		min-height: 72px;
+		box-sizing: border-box;
+		padding: 0 0.75rem;
+		font: inherit;
+		font-size: 2.4rem;
+		font-weight: 700;
 		text-align: center;
-		font-family: 'Comic Sans MS', cursive;
+		color: var(--c-text);
+		background: var(--c-surface);
+		border: 3px solid var(--c-primary);
+		border-radius: var(--c-radius);
+	}
+	input::placeholder {
+		color: var(--c-muted);
+		opacity: 0.55;
 	}
 	input:focus {
 		outline: none;
-		border-color: #ff6b6b;
-		box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+		box-shadow: 0 0 0 4px var(--c-focus);
 	}
-	button {
-		font-size: 1.25rem;
-		padding: 0.75rem 1.5rem;
-		background: linear-gradient(135deg, #51cf66, #20c997);
-		color: white;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		font-family: 'Comic Sans MS', cursive;
+	.submit {
+		min-height: 72px;
+		min-width: 8rem;
+		font-size: 1.6rem;
 	}
-	button:hover {
-		transform: translateY(-2px);
-	}
-
-	/* 移动端适配 */
-	@media (max-width: 768px) {
-		input {
-			font-size: 1.5rem;
-			width: 120px;
-			padding: 0.625rem 0.875rem;
-		}
-
-		button {
-			font-size: 1.1rem;
-			padding: 0.625rem 1.25rem;
-			min-height: 44px;
-		}
-	}
-
 	@media (max-width: 480px) {
-		.answer-input {
-			flex-direction: column;
-			gap: 0.75rem;
-		}
-
-		input {
-			font-size: 1.25rem;
-			width: 100%;
-			max-width: 200px;
-			padding: 0.5rem 0.75rem;
-		}
-
-		button {
-			font-size: 1rem;
-			padding: 0.75rem 1rem;
-			width: 100%;
-			max-width: 200px;
+		input,
+		.submit {
+			flex: 1 1 100%;
+			max-width: 260px;
 		}
 	}
 </style>

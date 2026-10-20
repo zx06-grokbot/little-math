@@ -8,7 +8,6 @@
 	import ConfigPanel from '$lib/components/ConfigPanel.svelte';
 	import ExerciseSheet from '$lib/components/ExerciseSheet.svelte';
 	import StatisticsPanel from '$lib/components/StatisticsPanel.svelte';
-	import UiThemeSwitcher from '$lib/components/UiThemeSwitcher.svelte';
 	import { zh } from '$lib/i18n/zh';
 	import { trackVisit } from '$lib/services/statistics';
 	import { loadConfig, saveConfig } from '$lib/services/configStorage';
@@ -38,7 +37,6 @@
 	let generatedConfig = $state<ExerciseConfig | null>(null);
 	let generatedKey = $state('');
 	let notice = $state<string | null>(null);
-	let theme = $state('default');
 	let isExportingPdf = $state(false);
 	let layoutNote = $state<string | null>(null);
 	let mounted = $state(false);
@@ -70,10 +68,6 @@
 		generatedConfig ? generatedConfig.customTitle?.trim() || autoTitle(generatedConfig) : ''
 	);
 	const sheetSubtitle = $derived(generatedConfig ? settingsSummary(generatedConfig) : '');
-
-	function handleThemeChange(newTheme: string) {
-		theme = newTheme;
-	}
 
 	$effect(() => {
 		if (browser) saveConfig($state.snapshot(config) as ExerciseConfig);
@@ -114,7 +108,7 @@
 		const cap = layout.maxPerPage;
 		untrack(() => {
 			if (lastLayoutKey && key !== lastLayoutKey && Number.isInteger(config.countPerPage) && config.countPerPage > cap) {
-				layoutNote = `当前版式一页 A4 最多放 ${cap} 道，每页题数已从 ${config.countPerPage} 调整为 ${cap}`;
+				layoutNote = `一张纸最多放 ${cap} 道，已从 ${config.countPerPage} 道改成 ${cap} 道`;
 				config.countPerPage = cap;
 			} else if (key !== lastLayoutKey) {
 				layoutNote = null;
@@ -149,7 +143,7 @@
 			await exportPagesToPdf(element);
 		} catch (error) {
 			console.error('PDF导出失败:', error);
-			alert('PDF导出失败，请重试');
+			alert('没存成功，再试一次吧');
 		} finally {
 			zoom = prevZoom;
 			isExportingPdf = false;
@@ -178,17 +172,6 @@
 </svelte:head>
 
 <div class="app">
-	<header class="app-header no-print">
-		<h1>{zh.appName}</h1>
-		<p>{zh.appSubtitle}</p>
-		<div class="header-links">
-			<a href="/practice" class="practice-link">🎯 在线练习</a>
-			<a href="/wrong-book" class="wrong-book-link">📕 错题本</a>
-			<a href="/favorites" class="favorites-link">⭐ 收藏题库</a>
-		</div>
-		<UiThemeSwitcher />
-	</header>
-
 	<main class="app-main">
 		<aside class="sidebar no-print">
 			<ConfigPanel
@@ -200,22 +183,20 @@
 				onPrint={handlePrint}
 				onExportPdf={handleExportPdf}
 				{isExportingPdf}
-				{theme}
-				onThemeChange={handleThemeChange}
 			/>
 		</aside>
 
 		<section class="preview" bind:this={previewEl}>
 			{#if issues.length > 0}
 				<div class="empty-state error-state no-print" data-testid="config-error">
-					<p>⚠️ 设置有误，暂时无法出题：</p>
+					<p>🤔 有个地方要改一下：</p>
 					<ul>
 						{#each issues as issue}<li>{issue.message}</li>{/each}
 					</ul>
 				</div>
 			{:else if problems.length > 0 && generatedConfig}
 				{#if stale}
-					<div class="banner no-print" data-testid="stale-banner">设置已修改，正在更新题目…</div>
+					<div class="banner no-print" data-testid="stale-banner">✨ 正在换新题…</div>
 				{/if}
 				{#if notice}
 					<div class="banner warn no-print" data-testid="fill-notice">ℹ️ {notice}</div>
@@ -231,7 +212,6 @@
 						subtitle={sheetSubtitle}
 						studentName={config.studentName}
 						showDate={config.showDate}
-						{theme}
 					/>
 					{#if config.showAnswerPage}
 						<ExerciseSheet
@@ -244,13 +224,12 @@
 							subtitle={sheetSubtitle}
 							studentName={config.studentName}
 							showDate={config.showDate}
-							{theme}
 						/>
 					{/if}
 				</div>
 			{:else}
 				<div class="empty-state">
-					<p>正在生成练习题…</p>
+					<p>✏️ 题目马上就好…</p>
 				</div>
 			{/if}
 		</section>
@@ -260,132 +239,53 @@
 </div>
 
 <style>
-	:global(body) {
-		margin: 0;
-		font-family: var(
-			--ui-font,
-			-apple-system,
-			BlinkMacSystemFont,
-			'Segoe UI',
-			Roboto,
-			sans-serif
-		);
-		background: var(--ui-bg, #eee);
-		color: var(--ui-fg, inherit);
-	}
-
 	.app {
-		min-height: 100vh;
-	}
-
-	.app-header {
-		background: var(--h-bg, linear-gradient(135deg, #ff6b6b 0%, #ffa502 50%, #ffdd59 100%));
-		color: var(--h-fg, white);
-		padding: var(--h-pad, 1.25rem 2rem);
-		text-align: center;
-		font-family: var(--h-font, 'Comic Sans MS', cursive, sans-serif);
-		border-bottom: var(--h-border, none);
-		box-shadow: var(--h-shadow, none);
-	}
-
-	.app-header h1 {
-		margin: 0;
-		font-size: var(--h-title-size, 2rem);
-		font-weight: var(--h-title-weight, bold);
-		letter-spacing: var(--h-title-ls, normal);
-		color: var(--h-title-fg, inherit);
-		text-shadow: var(--h-title-shadow, 2px 2px 4px rgba(0, 0, 0, 0.2));
-	}
-
-	.app-header h1::before {
-		content: var(--h-title-before, '🧮 ');
-	}
-
-	.app-header h1::after {
-		content: var(--h-title-after, ' ✨');
-	}
-
-	.app-header p {
-		display: var(--h-sub-display, block);
-		margin: 0.5rem 0 0;
-		opacity: 0.95;
-		font-size: 1rem;
-	}
-
-	.header-links {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-		margin-top: 0.75rem;
-		flex-wrap: wrap;
-	}
-
-	.practice-link,
-	.wrong-book-link,
-	.favorites-link {
-		display: inline-flex;
-		align-items: center;
-		min-height: var(--h-link-h, auto);
-		box-sizing: border-box;
-		padding: var(--h-link-pad, 0.5rem 1.25rem);
-		background: var(--h-link-bg, rgba(255, 255, 255, 0.25));
-		color: var(--h-link-fg, white);
-		border: var(--h-link-border, none);
-		text-decoration: none;
-		border-radius: var(--h-link-radius, 20px);
-		font-size: var(--h-link-size, 1rem);
-		font-weight: var(--h-link-weight, normal);
-		transition: background 0.2s;
-	}
-
-	.practice-link:hover,
-	.wrong-book-link:hover,
-	.favorites-link:hover {
-		background: var(--h-link-hover, rgba(255, 255, 255, 0.4));
+		min-height: calc(100vh - 80px);
 	}
 
 	.app-main {
 		display: grid;
-		grid-template-columns: var(--ui-sidebar-w, 320px) 1fr;
-		gap: var(--ui-gap, 1.5rem);
-		padding: var(--ui-gap, 1.5rem);
+		grid-template-columns: var(--ui-sidebar-w) 1fr;
+		gap: var(--ui-gap);
+		padding: var(--ui-gap);
 		max-width: 1400px;
 		margin: 0 auto;
 	}
 
 	.sidebar {
 		position: sticky;
-		top: var(--ui-gap, 1.5rem);
+		top: var(--ui-gap);
 		height: fit-content;
 	}
 
 	.preview {
-		background: var(--pv-bg, #f3f0ea);
-		border-radius: var(--pv-radius, 8px);
-		box-shadow: var(--pv-shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+		background: var(--pv-bg);
+		border-radius: var(--pv-radius);
+		box-shadow: var(--pv-shadow);
 		border: var(--pv-border, none);
 		overflow: auto;
-		padding: var(--pv-pad, 16px 8px 0);
+		padding: var(--pv-pad);
 		min-width: 0;
 	}
 
 	.banner {
 		max-width: 210mm;
 		margin: 0 auto 10px;
-		padding: 8px 12px;
-		border-radius: var(--ui-radius-sm, 8px);
-		background: var(--bn-bg, #e7f5ff);
-		color: var(--bn-fg, #1c7ed6);
-		font-size: var(--bn-size, 0.9rem);
+		padding: 10px 14px;
+		border-radius: var(--ui-radius-sm);
+		background: var(--bn-bg);
+		color: var(--bn-fg);
+		font-size: var(--bn-size);
 	}
 	.banner.warn {
-		background: var(--bn-warn-bg, #fff4e6);
-		color: var(--bn-warn-fg, #d9480f);
+		background: var(--bn-warn-bg);
+		color: var(--bn-warn-fg);
 	}
 	.empty-state.error-state {
 		flex-direction: column;
-		color: #c92a2a;
+		color: var(--c-danger);
 		padding: 1rem 2rem;
+		font-size: 1.1rem;
 	}
 	.error-state ul {
 		margin: 0.5rem 0 0;
@@ -400,25 +300,15 @@
 		align-items: center;
 		justify-content: center;
 		min-height: 400px;
-		color: var(--ui-muted, #999);
+		color: var(--ui-muted);
+		font-size: 1.15rem;
 	}
 
 	@media print {
-		:global(*) {
-			-webkit-print-color-adjust: exact !important;
-			print-color-adjust: exact !important;
-		}
-
-		:global(body) {
-			margin: 0 !important;
-			padding: 0 !important;
-		}
-
 		.app {
 			min-height: auto !important;
 		}
 
-		.app-header,
 		.no-print {
 			display: none !important;
 		}
@@ -432,47 +322,15 @@
 
 		.preview {
 			box-shadow: none !important;
+			border: none !important;
 			border-radius: 0 !important;
 			overflow: visible !important;
 			padding: 0 !important;
 			background: none !important;
 		}
-
-		:global(html),
-		:global(body) {
-			background: white !important;
-		}
 	}
 
 	@media (max-width: 768px) {
-		.app-header {
-			padding: 1rem 1.5rem;
-		}
-
-		.app-header h1 {
-			font-size: 1.5rem;
-		}
-
-		.app-header p {
-			font-size: 0.9rem;
-		}
-
-		.header-links {
-			gap: 0.75rem;
-			margin-top: 0.625rem;
-		}
-
-		.practice-link,
-		.wrong-book-link {
-			padding: 0.4rem 1rem;
-			font-size: 0.9rem;
-		}
-		/* 界面风格 A/B/C：三个入口统一大小（原版保持不变） */
-		:global(html[data-ui-theme]) .favorites-link {
-			padding: 0.4rem 1rem;
-			font-size: 0.9rem;
-		}
-
 		.app-main {
 			grid-template-columns: 1fr;
 			padding: 1rem;
@@ -489,34 +347,6 @@
 	}
 
 	@media (max-width: 480px) {
-		.app-header {
-			padding: 0.875rem 1rem;
-		}
-
-		.app-header h1 {
-			font-size: 1.25rem;
-		}
-
-		.app-header p {
-			font-size: 0.85rem;
-		}
-
-		.header-links {
-			gap: 0.5rem;
-			margin-top: 0.5rem;
-			flex-wrap: wrap;
-		}
-
-		.practice-link,
-		.wrong-book-link {
-			padding: 0.375rem 0.875rem;
-			font-size: 0.85rem;
-		}
-		:global(html[data-ui-theme]) .favorites-link {
-			padding: 0.375rem 0.875rem;
-			font-size: 0.85rem;
-		}
-
 		.app-main {
 			padding: 0.75rem;
 			gap: 0.75rem;

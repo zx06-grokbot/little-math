@@ -38,6 +38,14 @@
 		return '💪';
 	}
 
+	function getPraise(): string {
+		if (accuracy === 100) return '全对啦！你太棒了！';
+		if (accuracy >= 90) return '真厉害！差一点就全对啦！';
+		if (accuracy >= 70) return '做得很好！继续加油！';
+		if (accuracy >= 50) return '不错哦！多练练会更棒！';
+		return '没关系，再来一次一定更好！';
+	}
+
 	function formatProblem(problem: AnyProblem): string {
 		return formatProblemText(problem);
 	}
@@ -50,11 +58,11 @@
 		if ('type' in problem && problem.type === 'remainder') {
 			const p = problem as any;
 			if (p.blank === 'quotient') {
-				return `商: ${answer}`;
+				return `商 ${answer}`;
 			} else if (p.blank === 'remainder') {
-				return `余数: ${answer}`;
+				return `余数 ${answer}`;
 			} else {
-				return `${answer} (商或余数)`;
+				return `${answer}`;
 			}
 		}
 
@@ -77,50 +85,50 @@
 	}
 </script>
 
-<div class="result" data-testid="practice-result">
-	<div class="emoji">{getEmoji()}</div>
-	<h2>练习完成！</h2>
+<div class="result ui-card" data-testid="practice-result">
+	<div class="emoji" aria-hidden="true">{getEmoji()}</div>
+	<h2>{getPraise()}</h2>
 	<div class="stats">
 		<div class="stat">
-			<span class="label">正确率</span>
 			<span class="value" data-testid="result-accuracy">{accuracy}%</span>
+			<span class="label">🎯 答对</span>
 		</div>
 		<div class="stat">
-			<span class="label">正确/总题</span>
 			<span class="value">{correct}/{total}</span>
+			<span class="label">✅ 对了几道</span>
 		</div>
 		<div class="stat">
-			<span class="label">总用时</span>
 			<span class="value">{formatTime(timeSpent)}</span>
+			<span class="label">⏱️ 用时</span>
 		</div>
 		<div class="stat">
-			<span class="label">平均用时</span>
-			<span class="value">{formatTime(avgTime)}/题</span>
+			<span class="value">{formatTime(avgTime)}</span>
+			<span class="label">🐢 每道</span>
 		</div>
 	</div>
 	<div class="details">
-		<h3>答题详情</h3>
+		<h3>📋 看看每一道</h3>
+		<p class="star-tip">点 ☆ 可以收藏喜欢的题</p>
 		<div class="records-list">
 			{#each records as record, idx}
 				<div class="record-card" class:correct={record.isCorrect} class:wrong={!record.isCorrect}>
 					<div class="record-header">
-						<span class="index">{idx + 1}.</span>
+						<span class="index">{idx + 1}</span>
 						<span class="problem">{formatProblem(record.problem)}</span>
-						<span class="status">{record.isCorrect ? '✓' : '✗'}</span>
+						<span class="status" aria-label={record.isCorrect ? '对' : '错'}>{record.isCorrect ? '✅' : '❌'}</span>
 						<button
 							class="favorite-btn"
 							class:on={favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem))}
 							onclick={(e) => handleFavorite(record.problem, e)}
-							title={favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '取消收藏' : '收藏此题'}
+							title={favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '不收藏了' : '收藏这道题'}
+							aria-label={favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '不收藏了' : '收藏这道题'}
 							data-testid="favorite-btn"
-						>
-							{favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '⭐' : '☆'}
-						</button>
+						>{favoriteIds.has(problemId($state.snapshot(record.problem) as AnyProblem)) ? '⭐' : '☆'}</button>
 					</div>
 					{#if !record.isCorrect}
 						<div class="answers">
-							<span class="wrong">你的答案: {formatAnswer(record.userAnswer, record.problem)}</span>
-							<span class="correct">正确答案: {formatAnswer(record.correctAnswer, record.problem)}</span>
+							<span class="wrong">你写的：{formatAnswer(record.userAnswer, record.problem)}</span>
+							<span class="correct">正确答案：{formatAnswer(record.correctAnswer, record.problem)}</span>
 						</div>
 					{/if}
 				</div>
@@ -129,307 +137,167 @@
 	</div>
 
 	<div class="actions">
-		<button class="primary" onclick={onRestart}>再来一次</button>
-		<button class="secondary" onclick={onBackHome}>返回首页</button>
+		<button class="ui-btn ui-btn-primary ui-btn-big" onclick={onRestart}>🔁 再玩一次</button>
+		<button class="ui-btn ui-btn-secondary ui-btn-big" onclick={onBackHome}>🏠 回首页</button>
 	</div>
 </div>
 
 <style>
 	.result {
+		max-width: 640px;
+		margin: 0.5rem auto 2rem;
+		padding: 1.75rem 1.5rem 2rem;
 		text-align: center;
-		padding: 2rem;
-		font-family: 'Comic Sans MS', cursive;
+		box-sizing: border-box;
 	}
 	.emoji {
-		font-size: 5rem;
-		margin-bottom: 1rem;
+		font-size: 4.5rem;
+		line-height: 1.1;
 	}
 	h2 {
-		color: #ff6b6b;
-		margin-bottom: 2rem;
+		color: var(--c-title);
+		font-size: 1.8rem;
+		margin: 0.6rem 0 1.5rem;
 	}
 	.stats {
-		display: flex;
-		justify-content: center;
-		gap: 3rem;
-		margin-bottom: 2rem;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.75rem;
+		margin-bottom: 1.75rem;
 	}
 	.stat {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
-	}
-	.label {
-		color: #666;
-		font-size: 1rem;
+		gap: 0.3rem;
+		padding: 0.9rem 0.4rem;
+		border-radius: var(--c-radius);
+		background: var(--c-primary-soft);
+		color: var(--c-on-primary-soft);
 	}
 	.value {
-		color: #5c7cfa;
-		font-size: 2rem;
-		font-weight: bold;
+		font-size: 1.6rem;
+		font-weight: 800;
+		color: var(--c-title);
+		white-space: nowrap;
 	}
-	.actions {
-		display: flex;
-		justify-content: center;
-		gap: 1rem;
-	}
-	button {
-		padding: 0.75rem 2rem;
-		font-size: 1.25rem;
-		border: none;
-		border-radius: 12px;
-		cursor: pointer;
-		font-family: inherit;
-	}
-	.primary {
-		background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-		color: white;
-	}
-	.secondary {
-		background: linear-gradient(135deg, #51cf66, #20c997);
-		color: white;
+	.label {
+		font-size: 1rem;
+		color: var(--c-muted);
 	}
 	.details {
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 2px dashed #eee;
+		text-align: left;
 	}
-	.details h3 {
-		text-align: center;
-		color: #666;
-		margin-bottom: 1rem;
+	h3 {
+		font-size: 1.3rem;
+		color: var(--c-text);
+		margin: 0 0 0.25rem;
+	}
+	.star-tip {
+		margin: 0 0 0.75rem;
+		color: var(--c-muted);
+		font-size: 1rem;
 	}
 	.records-list {
-		max-height: 400px;
-		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.6rem;
+		max-height: 420px;
+		overflow-y: auto;
+		padding: 2px;
 	}
 	.record-card {
-		background: white;
-		border-radius: 12px;
-		padding: 1rem 1.5rem;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-		border-left: 4px solid #ddd;
+		padding: 0.6rem 0.8rem;
+		border-radius: var(--c-radius);
+		border: 2px solid var(--c-border);
+		background: var(--c-surface);
 	}
 	.record-card.correct {
-		border-left-color: #51cf66;
+		border-color: var(--c-success-soft);
 	}
 	.record-card.wrong {
-		border-left-color: #ff6b6b;
+		border-color: var(--c-danger-soft);
+		background: color-mix(in srgb, var(--c-danger-soft) 40%, var(--c-surface));
 	}
 	.record-header {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 0.5rem;
+		gap: 0.6rem;
 	}
 	.index {
-		color: #999;
-		font-weight: 600;
-		min-width: 2rem;
+		flex: 0 0 auto;
+		min-width: 1.8em;
+		height: 1.8em;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: var(--c-surface-2);
+		color: var(--c-muted);
+		font-size: 0.95rem;
+		font-weight: 700;
 	}
 	.problem {
-		flex: 1;
-		color: #333;
-		font-size: 1.1rem;
-		font-weight: 500;
+		flex: 1 1 auto;
+		min-width: 0;
+		font-size: 1.35rem;
+		font-weight: 600;
+		overflow-wrap: anywhere;
 	}
 	.status {
-		font-size: 1.5rem;
-		font-weight: bold;
+		font-size: 1.3rem;
 	}
 	.favorite-btn {
-		background: none;
+		flex: 0 0 auto;
+		width: 48px;
+		height: 48px;
 		border: none;
-		font-size: 1.25rem;
+		border-radius: 50%;
+		background: transparent;
+		font-size: 1.6rem;
+		color: var(--c-warn);
 		cursor: pointer;
-		padding: 0.25rem;
-		transition: transform 0.2s;
 	}
-	.favorite-btn:hover {
-		transform: scale(1.2);
-	}
-	.record-card.correct .status {
-		color: #51cf66;
-	}
-	.record-card.wrong .status {
-		color: #ff6b6b;
+	.favorite-btn:hover,
+	.favorite-btn:focus-visible {
+		background: var(--c-warn-soft);
 	}
 	.answers {
 		display: flex;
-		gap: 2rem;
-		font-size: 0.9rem;
-		padding-top: 0.5rem;
-		border-top: 1px solid #f0f0f0;
+		flex-wrap: wrap;
+		gap: 0.3rem 1.25rem;
+		margin: 0.35rem 0 0 2.4em;
+		font-size: 1.1rem;
 	}
-	.wrong {
-		color: #ff6b6b;
-		font-weight: 500;
+	.answers .wrong {
+		color: var(--c-danger);
 	}
-	.correct {
-		color: #51cf66;
-		font-weight: 500;
+	.answers .correct {
+		color: var(--c-success);
+		font-weight: 700;
+	}
+	.actions {
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-top: 1.75rem;
+	}
+	.actions .ui-btn {
+		min-width: 10rem;
 	}
 
-	/* 移动端适配 */
-	@media (max-width: 768px) {
+	@media (max-width: 560px) {
 		.result {
-			padding: 1.5rem;
+			padding: 1.25rem 0.9rem 1.5rem;
 		}
-
-		.emoji {
-			font-size: 4rem;
-			margin-bottom: 0.875rem;
-		}
-
-		h2 {
-			font-size: 1.5rem;
-			margin-bottom: 1.5rem;
-		}
-
 		.stats {
-			gap: 1.5rem;
-			margin-bottom: 1.5rem;
-			flex-wrap: wrap;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
-
-		.stat {
-			flex: 1 1 40%;
-		}
-
-		.label {
-			font-size: 0.9rem;
-		}
-
-		.value {
-			font-size: 1.75rem;
-		}
-
-		.actions {
-			gap: 0.75rem;
-			flex-wrap: wrap;
-		}
-
-		button {
-			flex: 1 1 40%;
-			padding: 0.625rem 1.5rem;
-			font-size: 1.1rem;
-		}
-
-		.details {
-			margin-top: 1.5rem;
-			padding-top: 1.25rem;
-		}
-
-		.details h3 {
-			font-size: 1.1rem;
-		}
-
-		.records-list {
-			max-height: 350px;
-			gap: 0.75rem;
-		}
-
-		.record-card {
-			padding: 0.875rem 1.25rem;
-		}
-
-		.problem {
-			font-size: 1rem;
-		}
-
-		.answers {
-			gap: 1rem;
-			font-size: 0.85rem;
-			flex-direction: column;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.result {
-			padding: 1rem;
-		}
-
-		.emoji {
-			font-size: 3rem;
-			margin-bottom: 0.75rem;
-		}
-
 		h2 {
-			font-size: 1.35rem;
-			margin-bottom: 1.25rem;
+			font-size: 1.45rem;
 		}
-
-		.stats {
-			gap: 1rem;
-			margin-bottom: 1.25rem;
-			flex-direction: column;
-		}
-
-		.stat {
+		.actions .ui-btn {
 			flex: 1 1 100%;
-		}
-
-		.label {
-			font-size: 0.85rem;
-		}
-
-		.value {
-			font-size: 1.5rem;
-		}
-
-		.actions {
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-
-		button {
-			width: 100%;
-			padding: 0.75rem;
-			font-size: 1rem;
-		}
-
-		.details {
-			margin-top: 1.25rem;
-			padding-top: 1rem;
-		}
-
-		.details h3 {
-			font-size: 1rem;
-		}
-
-		.records-list {
-			max-height: 300px;
-			gap: 0.5rem;
-		}
-
-		.record-card {
-			padding: 0.75rem 1rem;
-		}
-
-		.record-header {
-			gap: 0.5rem;
-		}
-
-		.index {
-			min-width: 1.5rem;
-			font-size: 0.9rem;
-		}
-
-		.problem {
-			font-size: 0.95rem;
-		}
-
-		.status {
-			font-size: 1.25rem;
-		}
-
-		.answers {
-			gap: 0.75rem;
-			font-size: 0.8rem;
-			flex-direction: column;
 		}
 	}
 </style>
