@@ -1,8 +1,50 @@
 # 🧮 Little Math 小小数学家
 
-幼儿园/小学数学练习生成打印工具，帮助家长和老师快速生成适合低年级学生的数学练习题。
+给幼儿园和小学低年级小朋友的数学练习小助手：点一下就出一套口算卷，能打印、存 PDF，也能在线做题。
 
-## ✨ 功能特点
+👉 **在线体验：<https://little-math.xuzhuo.xyz/>**（免费、免注册，手机电脑都能用）
+
+## 📝 一键出题，所见即所得
+
+选年级、玩什么（算一算 / 凑一凑 / 连着算 / 比大小 / 分一分）、横式还是竖式，右边马上出一张 A4 卷子；不满意就点「换一套」。
+
+![首页：出题面板 + 两列卷子预览（🍬糖果）](docs/screenshots/home-candy.png)
+
+## 🎨 三套主题，小朋友自己挑
+
+🍬糖果、🌳森林、🌊海洋，右上角一键切换，所有页面一起变色；数字用圆润好认的字体，1 和 7、4 和 9、0 和 6 一眼分清。
+
+![森林和海洋主题](docs/screenshots/themes-forest-ocean.png)
+
+## 🎯 在线做题，答对就有鼓励
+
+一题一题做，答对自动下一题，还能计时和语音读题；做完能看正确率、用时，逐题回顾，点 ☆ 收藏喜欢的题。
+
+![在线做题（🌊海洋）](docs/screenshots/practice.png)
+
+![做完看结果（🌊海洋）](docs/screenshots/practice-result.png)
+
+## 📕 错题本，再练一遍就会啦
+
+做错的题自动收进错题本，一键「再练一遍」，会了就点「学会了」；右下角 📊 还能看最近的练习记录。
+
+![错题本（🌳森林）](docs/screenshots/wrong-book.png)
+
+## 🖨️ 打印 / 存 PDF 也跟着主题走
+
+白底、题目纯黑、字大清楚，只留跟随主题的浅色点缀（标题色、浅色表头、细线和小图标），家用打印机省墨，也不挡小朋友写字。一页卷子正好一张 A4。
+
+![三个主题的打印效果：糖果 / 森林 / 海洋](docs/screenshots/print-themes.png)
+
+## 📱 手机上也好用
+
+出题、预览卷子、在线做题，手机上都能顺手操作。
+
+![手机界面（🍬糖果）](docs/screenshots/mobile.png)
+
+---
+
+## ✨ 功能一览
 
 ### 📝 练习题生成
 
@@ -23,17 +65,21 @@
 
 ### 🎯 在线练习
 
-- 即时答题反馈
+- 即时答题反馈（答对自动下一题，答错显示正确答案）
 - 计时功能
-- 正确率统计
+- 正确率统计、逐题回顾
 - 语音读题（支持的浏览器）
-- 成就系统
+- 成就系统（得到新奖章）
 
 ### 📕 错题本
 
 - 自动记录错题
 - 错题复习功能
-- 复习次数追踪
+- 复习次数追踪，「学会了」移出错题本
+
+### ⭐ 收藏
+
+- 练习结果里点 ☆ 收藏喜欢的题，在「收藏」页集中查看
 
 ### 📊 使用统计
 
@@ -41,14 +87,15 @@
 - 运算类型使用分布
 - 最近 7 天数据图表
 - 练习进度追踪
-- 数据导出（JSON/CSV）
+- 数据导出（JSON / CSV 表格）
 
 ### 🎨 其他特性
 
-- **三种颜色**：🍬糖果 / 🌳森林 / 🌊海洋，覆盖所有页面；打印和 PDF 始终黑白省墨
-- **配置持久化**：自动保存上次配置
-- **儿童化设计**：彩色界面、可爱字体、趣味装饰
-- **打印友好**：保留彩色样式，背景覆盖整页
+- **三种颜色**：🍬糖果（默认）/ 🌳森林 / 🌊海洋，右上角一键切换，覆盖所有页面；也可以用网址参数 `?theme=candy|forest|ocean`
+- **配置持久化**：自动保存上次配置和所选颜色
+- **儿童化设计**：给 5 岁左右小朋友看的文案（「打印题」「做题」「换一套」「存成 PDF」），圆润字体，趣味小图标
+- **好认的字体**：数字用 Nunito（圆体、等宽数字，1/7、4/9、0/6 区分清楚），标题和按钮用站酷快乐体；字体自托管在 `static/fonts/`（均为 SIL OFL 1.1），中文按站内用到的字做了子集（约 72 KB），加载失败时自动回退系统字体
+- **打印友好**：白底、题目和数字纯黑，只保留跟随主题的浅色点缀（标题色、浅色表头、细线、小图标），不铺大面积底色，省墨也不影响写字
 - **移动端适配**：响应式设计，手机也能用
 
 ## 📐 出题规则
@@ -76,9 +123,12 @@
 - 网页上的每一页就是一张 A4（210mm × 297mm），浏览器打印和「导出PDF」都是「一页卷子 = 一页 A4」。
 - 每页最多题数：2 列 24 道、3 列 51 道、竖式 20 道；切换版式时超过上限会自动调小并提示。
 - 竖式只用于普通计算和凑数练习，其它模式自动使用横式。
+- 打印和「存成 PDF」都跟随当前颜色主题的浅色点缀，并设置了 `print-color-adjust: exact`，浏览器打印也能印出浅色；题目文字始终纯黑。
 - 导出 PDF 的文件名日期按浏览器本地时间、在导出时计算。
 
-## 🚀 快速开始
+## 🛠️ 开发
+
+### 🚀 快速开始
 
 需要 **Node.js 22**（≥ 22.13）和 **pnpm 11**（`corepack enable` 后自动使用 package.json 里指定的版本）。
 
@@ -103,27 +153,20 @@ pnpm exec playwright install chromium   # 首次运行
 pnpm test:e2e
 ```
 
-## 📦 部署到 Vercel
+### 📦 部署到 Vercel
 
 1. 将项目推送到 GitHub
 2. 在 [Vercel](https://vercel.com) 导入仓库
 3. 自动检测 SvelteKit，点击部署即可
 
-## 🎨 界面预览
-
-- 左侧配置面板：选择年级、运算类型、题数等
-- 右侧预览区域：实时显示生成的练习题
-- 点击「生成」刷新题目，点击「打印」调用浏览器打印
-- 右下角统计面板：查看使用数据
-
-## 🔧 技术栈
+### 🔧 技术栈
 
 - [SvelteKit](https://kit.svelte.dev/) - 全栈 Web 框架
 - [Svelte 5](https://svelte.dev/) - 使用 runes 语法（$state, $derived, $effect）
 - [TypeScript](https://www.typescriptlang.org/) - 类型安全
 - [Vite](https://vitejs.dev/) - 构建工具
 
-## 🔒 安全
+### 🔒 安全
 
 - **依赖安全**：在 `pnpm-workspace.yaml` 的 `overrides` 中强制升级 `cookie`、`tar` 到安全版本
   - 修复 CVE-2024-47764（cookie XSS），以及 tar 的路径遍历漏洞
@@ -132,7 +175,7 @@ pnpm test:e2e
   - 验证：`pnpm why cookie` 应只显示 `cookie@0.7.x`
   - 参考：https://github.com/advisories/GHSA-pxg6-pf52-xh8x
 
-## 📁 项目结构
+### 📁 项目结构
 
 ```
 src/
@@ -149,8 +192,12 @@ src/
 │   │   └── remainder.ts  # 有余数除法生成器
 │   ├── config/
 │   │   ├── presets.ts    # 年级预设配置
+│   │   ├── layout.ts     # 每页题数、版式上限
 │   │   └── uiThemes.ts   # 三个界面主题（糖果/森林/海洋）
+│   ├── styles/
+│   │   └── ui-themes.css # 主题样式、字体、打印 / PDF 点缀
 │   ├── components/       # UI 组件
+│   │   ├── AppHeader.svelte        # 顶部导航
 │   │   ├── ConfigPanel.svelte      # 左侧配置面板
 │   │   ├── ExerciseSheet.svelte    # 练习题显示/打印
 │   │   ├── StatisticsPanel.svelte  # 统计面板
@@ -165,11 +212,14 @@ src/
 │   │   ├── UiThemeSwitcher.svelte  # 换颜色（主题切换）
 │   │   └── AchievementToast.svelte # 成就提示
 │   ├── actions/          # Svelte actions
+│   │   ├── fitText.ts    # 卷面文字自动缩放，防止溢出
 │   │   └── track.ts      # 统计埋点 action
 │   ├── services/         # 业务服务
 │   │   ├── statistics.ts    # 统计服务
 │   │   ├── configStorage.ts # 配置持久化
 │   │   ├── wrongBook.ts     # 错题本服务
+│   │   ├── favorites.ts     # 收藏服务
+│   │   ├── pdfExport.ts     # 导出 PDF（一页卷子 = 一页 A4）
 │   │   ├── achievements.ts  # 成就系统
 │   │   ├── speech.ts        # 语音服务
 │   │   └── export.ts        # 数据导出
@@ -181,8 +231,13 @@ src/
 │   ├── +layout.svelte    # 布局组件
 │   ├── practice/
 │   │   └── +page.svelte  # 在线练习页面
-│   └── wrong-book/
-│       └── +page.svelte  # 错题本页面
+│   ├── wrong-book/
+│   │   └── +page.svelte  # 错题本页面
+│   └── favorites/
+│       └── +page.svelte  # 收藏页面
+static/fonts/             # 自托管字体子集 + OFL 许可
+scripts/subset-fonts.py   # 重新生成字体子集
+docs/screenshots/         # README 截图
 ```
 
 ## 📝 License
