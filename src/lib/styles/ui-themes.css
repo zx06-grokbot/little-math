@@ -42,15 +42,69 @@
 	/* 卷面数字槽：Nunito 的 0–9 等宽；没加载时退回等宽字体，对齐仍靠 1ch */
 	--font-num: 'LM Nunito', 'Nunito', 'DejaVu Sans Mono', 'Courier New', ui-monospace, monospace;
 
+	/* 字体：三个主题共用一套 */
+	--ui-font: var(--font-body);
+	--h-font: var(--font-fun);
+	--cp-font: var(--font-body);
 	--cp-h2-font: var(--font-fun);
 	--s-title-font: var(--font-fun);
 
-	/* 卷面装饰（屏幕与打印共用；各主题覆盖） */
-	--s-frame: none;
+	/* ===== 版式只在这里定义一次 =====
+	 * 字号、行距、字距、对齐、间距、元素尺寸、圆角、边框粗细都写在 :root；
+	 * 各主题块只能改颜色 / 底色 / 阴影 / 滤镜 / 装饰 emoji / 线型（见 src/lib/styles/uiThemesCss.test.ts 守卫）。
+	 * 边框统一写成「粗细 + 线型 + 主题颜色」，不想要边框的主题把颜色设成 transparent，尺寸不变。 */
+	--ui-radius-sm: 14px;
+	--h-title-size: 1.7rem;
+	--h-title-weight: 800;
+	--h-title-ls: 0.04em;
+	--h-border: 1px solid var(--h-border-color, transparent);
+	--h-link-radius: 999px;
+	--h-link-border: 1px solid var(--h-link-border-color, transparent);
+	--h-switch-radius: 999px;
+	--h-switch-border: 1px solid var(--h-switch-border-color, transparent);
+	--c-card-border: 1px solid var(--c-card-border-color, transparent);
+	--cp-radius: 24px;
+	--cp-border: 1px solid var(--cp-border-color, transparent);
+	--cp-h2-size: 1.5rem;
+	--cp-h2-weight: bold;
+	--cp-h2-align: center;
+	--cp-h2-ls: normal;
+	--cp-h2-pb: 0;
+	--cp-h2-border: none;
+	--cp-h2-margin: 0 0 1.4rem;
+	--cp-ico-size: 1.9em;
+	--cp-ico-font: 0.95em;
+	--cp-ico-radius: 50%;
+	--cp-input-radius: 14px;
+	--cp-input-border: 2px solid var(--cp-input-border-color, transparent);
+	--cp-chip-radius: 14px;
+	--cp-chip-border: 2px solid var(--cp-chip-border-color, transparent);
+	--cp-chip-on-border: 2px solid var(--cp-chip-on-border-color, transparent);
+	--cp-chip-on-weight: 600;
+	--cp-btn-radius: 999px;
+	--cp-btn1-border: 2px solid var(--cp-btn1-border-color, transparent);
+	--cp-btn2-border: 2px solid var(--cp-btn2-border-color, transparent);
+	--cp-btn3-border: 2px solid var(--cp-btn3-border-color, transparent);
+	--cp-btn-hover-transform: translateY(-1px);
+	--fab-border: 2px solid var(--fab-border-color, transparent);
+	--pv-radius: 24px;
+	--pv-pad: 20px 12px 4px;
+
+	/* 卷面装饰（屏幕与打印共用尺寸；颜色 / 线型 / emoji 由各主题给） */
+	--s-page-radius: 18px;
+	--s-title-weight: 700;
+	--s-title-ls: 0.06em;
+	--s-info-line-bw: 2px;
+	--s-info-line: var(--s-info-line-bw) var(--s-info-line-style, solid) var(--s-info-line-color, transparent);
+	--s-grid-rule-bw: 2px;
+	--s-grid-rule: var(--s-grid-rule-bw) var(--s-grid-rule-style, solid) var(--s-grid-rule-color, transparent);
+	--s-cell-shadow: none;
+	--s-frame-bw: 1.5px;
+	--s-frame: var(--s-frame-bw) var(--s-frame-style, solid) var(--s-frame-color, transparent);
 	--s-frame-inset: 4mm;
-	--s-frame-radius: 0;
+	--s-frame-radius: 6mm;
 	--s-header-bg: none;
-	--s-header-radius: 0;
+	--s-header-radius: 4mm;
 	--s-corner: none;
 	--s-corner-bg: #fff;
 	--c-tap: 48px;
@@ -128,7 +182,7 @@ html[data-ui-theme='a'] {
 	--c-surface: #ffffff;
 	--c-surface-2: #fdf5f8;
 	--c-border: #f1e6ee;
-	--c-card-border: none;
+	--c-card-border-color: transparent;
 	--c-shadow: 0 6px 20px rgba(214, 170, 190, 0.2);
 	--c-shadow-lg: 0 12px 36px rgba(180, 130, 155, 0.28);
 	--c-focus: #d66d8c;
@@ -147,24 +201,19 @@ html[data-ui-theme='a'] {
 	--c-chart-2: #e6f6ee;
 	--c-badge-bg: #fff6d6;
 	--c-badge-border: #ffe08a;
-	--ui-font: var(--font-body);
 	--ui-bg: #fbf6f1;
 	--ui-fg: #4a4458;
 	--ui-muted: #9a8fa6;
-	--ui-radius-sm: 14px;
 
 	--h-bg: linear-gradient(120deg, #ffe6ee 0%, #fff3df 52%, #e3f2ff 100%);
 	--h-fg: #5a4a68;
-	--h-font: var(--font-fun);
 	--h-title-fg: #df6f8e;
 	--h-title-shadow: 0 2px 0 rgba(255, 255, 255, 0.9);
 	--h-title-before: '🧮 ';
 	--h-title-after: ' 🌈';
-	--h-title-ls: 0.04em;
 	--h-link-bg: rgba(255, 255, 255, 0.72);
 	--h-link-hover: #fff;
 	--h-link-fg: #6a5a7a;
-	--h-link-radius: 999px;
 	--h-switch-bg: rgba(255, 255, 255, 0.55);
 	--h-switch-label: #7a6a88;
 	--h-switch-fg: #6a5a7a;
@@ -174,39 +223,28 @@ html[data-ui-theme='a'] {
 	--h-switch-on-shadow: 0 2px 8px rgba(223, 111, 142, 0.18);
 
 	--cp-bg: #ffffff;
-	--cp-border: none;
-	--cp-radius: 24px;
+	--cp-border-color: transparent;
 	--cp-shadow: 0 8px 28px rgba(214, 170, 190, 0.22);
-	--cp-font: var(--ui-font);
 	--cp-fg: #4a4458;
 	--cp-h2-fg: #df6f8e;
-	--cp-h2-size: 1.5rem;
 	--cp-h2-before: '🧸 ';
-	--cp-h2-margin: 0 0 1.4rem;
 	--cp-label-fg: #5a5068;
 	--cp-ico-bg: #fff0f4;
-	--cp-ico-size: 1.9em;
-	--cp-ico-font: 0.95em;
-	--cp-input-border: 2px solid #f1e6ee;
-	--cp-input-radius: 14px;
+	--cp-input-border-color: #f1e6ee;
 	--cp-input-bg: #fffcfd;
 	--cp-focus-border: #f2a3ba;
 	--cp-focus-ring: 0 0 0 4px rgba(242, 163, 186, 0.22);
 	--cp-accent: #d66d8c;
 	--cp-range-track: #f6e3ea;
-	--cp-chip-border: 2px solid #f1e6ee;
-	--cp-chip-radius: 14px;
+	--cp-chip-border-color: #f1e6ee;
 	--cp-chip-bg: #fff;
 	--cp-chip-on-bg: #fff0f5;
-	--cp-chip-on-border: 2px solid #f2a3ba;
+	--cp-chip-on-border-color: #f2a3ba;
 	--cp-chip-on-fg: #a8405f;
-	--cp-chip-on-weight: 600;
 	--cp-hint-fg: #9a8fa6;
 	--cp-small-fg: #7f7490;
 	--cp-note-fg: #c26a3a;
 	--cp-error-fg: #cf3f63;
-	--cp-btn-radius: 999px;
-	--cp-btn-hover-transform: translateY(-1px);
 	--cp-btn1-bg: #ffc6d4;
 	--cp-btn1-hover-bg: #ffb8c9;
 	--cp-btn1-fg: #7a2944;
@@ -224,35 +262,33 @@ html[data-ui-theme='a'] {
 	--cp-btn3-hover-shadow: 0 4px 12px rgba(100, 140, 220, 0.25);
 
 	--fab-bg: #ffffff;
-	--fab-border: 2px solid #f6dbe4;
+	--fab-border-color: #f6dbe4;
 	--fab-shadow: 0 6px 16px rgba(214, 170, 190, 0.3);
 	/* 页脚（GitHub 链接）：小字、跟主题色，文字对比度 ≥ 4.5 */
 	--ft-fg: #a94a6f;
 	--ft-fg-hover: #8e3a5c;
 	--ft-hover-bg: rgba(169, 74, 111, 0.1);
 	--pv-bg: #f5ede6;
-	--pv-radius: 24px;
 	--pv-shadow: none;
-	--pv-pad: 20px 12px 4px;
 	--bn-bg: #eaf4ff;
 	--bn-fg: #3a5f8f;
 	--bn-warn-bg: #fff3e2;
 	--bn-warn-fg: #9a521a;
 
 	--s-page-bg: #fffdfa;
-	--s-page-radius: 18px;
 	--s-page-shadow: 0 6px 20px rgba(200, 165, 145, 0.2);
 	--s-title-fg: #de6f8d;
 	--s-title-shadow: none;
 	--s-title-before: '🐣 ';
 	--s-title-after: ' 🌈';
-	--s-title-ls: 0.06em;
 	--s-sub-fg: #a0938a;
 	--s-info-fg: #6a5a6a;
 	--s-info-label: #e0915f;
-	--s-info-line: 2px dashed #f0c8b2;
+	--s-info-line-style: dashed;
+	--s-info-line-color: #f0c8b2;
 	--s-info-value: #5f7bc9;
-	--s-grid-rule: 2px dotted #f1d8c8;
+	--s-grid-rule-style: dotted;
+	--s-grid-rule-color: #f1d8c8;
 	--s-ink: #4f4a5a;
 	--s-qno: #e486a0;
 	--s-num: #5874c4;
@@ -265,12 +301,22 @@ html[data-ui-theme='a'] {
 	--s-rule-ink: #5a5566;
 	--s-vbox: #c9bcd0;
 
-	--s-frame: 1.5px dashed #f4c6d3;
-	--s-frame-radius: 6mm;
+	--s-frame-style: dashed;
+	--s-frame-color: #f4c6d3;
 	--s-header-bg: #fff5f8;
-	--s-header-radius: 4mm;
 	--s-corner: '🍬';
 	--s-corner-bg: #fffdfa;
+
+	/* 和其它主题对齐：每个主题都给出同一组变量 */
+	--h-border-color: transparent;
+	--h-link-border-color: transparent;
+	--h-switch-border-color: transparent;
+	--cp-btn2-border-color: transparent;
+	--cp-btn3-border-color: transparent;
+	--cp-ico-filter: none;
+	--cp-btn-ico-filter: none;
+	--s-cell-shadow: none;
+	--cp-input-fg: #4a4458;
 }
 
 /* ============ 🌳 森林（b）：米白纸、墨绿一个强调色 ============ */
@@ -282,7 +328,7 @@ html[data-ui-theme='b'] {
 	--c-surface: #fffdf8;
 	--c-surface-2: #f6f2e9;
 	--c-border: #e3dccd;
-	--c-card-border: 1px solid #e3dccd;
+	--c-card-border-color: #e3dccd;
 	--c-shadow: 0 1px 0 #e3dccd, 0 6px 16px rgba(90, 80, 60, 0.05);
 	--c-shadow-lg: 0 12px 32px rgba(60, 50, 30, 0.16);
 	--c-focus: #2f6f5e;
@@ -301,30 +347,23 @@ html[data-ui-theme='b'] {
 	--c-chart-2: #e4ece6;
 	--c-badge-bg: #fbf6e6;
 	--c-badge-border: #d9caa0;
-	--ui-font: var(--font-body);
 	--ui-bg: #efebe3;
 	--ui-fg: #34322d;
 	--ui-muted: #8c8676;
-	--ui-radius-sm: 6px;
 
 	--h-bg: #faf8f3;
 	--h-fg: #34322d;
-	--h-font: var(--font-fun);
-	--h-border: 1px solid #e0d9cb;
+	--h-border-color: #e0d9cb;
 	--h-title-fg: #2b2a26;
 	--h-title-shadow: none;
-	--h-title-before: '📒 ';
-	--h-title-after: '';
-	--h-title-ls: 0.12em;
-	--h-title-size: 1.9rem;
+	--h-title-before: '🧮 ';
+	--h-title-after: ' 🌳';
 	--h-link-bg: transparent;
-	--h-link-border: 1px solid #d6cfbf;
+	--h-link-border-color: #d6cfbf;
 	--h-link-hover: #f1ede4;
 	--h-link-fg: #4a473f;
-	--h-link-radius: 6px;
 	--h-switch-bg: #f1ede4;
-	--h-switch-border: 1px solid #e0d9cb;
-	--h-switch-radius: 8px;
+	--h-switch-border-color: #e0d9cb;
 	--h-switch-label: #7a7566;
 	--h-switch-fg: #4a473f;
 	--h-switch-hover: #e7e2d6;
@@ -333,48 +372,30 @@ html[data-ui-theme='b'] {
 	--h-switch-on-shadow: none;
 
 	--cp-bg: #fffdf8;
-	--cp-border: 1px solid #e3dccd;
-	--cp-radius: 8px;
+	--cp-border-color: #e3dccd;
 	--cp-shadow: 0 1px 0 #e3dccd, 0 8px 20px rgba(90, 80, 60, 0.05);
-	--cp-font: var(--ui-font);
 	--cp-fg: #34322d;
 	--cp-h2-fg: #2b2a26;
-	--cp-h2-font: var(--font-fun);
-	--cp-h2-size: 1.4rem;
-	--cp-h2-align: left;
-	--cp-h2-before: '✎ ';
-	--cp-h2-ls: 0.1em;
-	--cp-h2-border: 1px solid #e8e2d4;
-	--cp-h2-pb: 0.75rem;
-	--cp-h2-margin: 0 0 1.3rem;
+	--cp-h2-before: '🌱 ';
 	--cp-label-fg: #4a473f;
-	--cp-ico-size: 1.5em;
 	--cp-ico-filter: grayscale(1) opacity(0.75);
 	--cp-ico-bg: transparent;
-	--cp-ico-font: 1.05em;
 	--cp-btn-ico-filter: grayscale(1);
-	--cp-input-border: 1px solid #d6cfbf;
-	--cp-input-radius: 6px;
+	--cp-input-border-color: #d6cfbf;
 	--cp-input-bg: #fffefb;
 	--cp-focus-border: #2f6f5e;
 	--cp-focus-ring: 0 0 0 3px rgba(47, 111, 94, 0.16);
 	--cp-accent: #2f6f5e;
 	--cp-range-track: #e4ddcf;
-	--cp-chip-border: 1px solid #d6cfbf;
-	--cp-chip-radius: 6px;
+	--cp-chip-border-color: #d6cfbf;
 	--cp-chip-bg: #fffefb;
 	--cp-chip-on-bg: #eaf2ee;
-	--cp-chip-on-border: 1px solid #2f6f5e;
+	--cp-chip-on-border-color: #2f6f5e;
 	--cp-chip-on-fg: #22584a;
-	--cp-chip-on-weight: 600;
 	--cp-hint-fg: #8c8676;
 	--cp-small-fg: #6d685b;
 	--cp-note-fg: #9a5a22;
 	--cp-error-fg: #b3402a;
-	--cp-btn-radius: 6px;
-	--cp-btn-h: 54px;
-	--cp-btn-size: 1.25rem;
-	--cp-btn-hover-transform: none;
 	--cp-btn1-bg: #2f6f5e;
 	--cp-btn1-hover-bg: #285f51;
 	--cp-btn1-fg: #ffffff;
@@ -383,27 +404,25 @@ html[data-ui-theme='b'] {
 	--cp-btn2-bg: #fffefb;
 	--cp-btn2-hover-bg: #eef4f1;
 	--cp-btn2-fg: #2f6f5e;
-	--cp-btn2-border: 1.5px solid #2f6f5e;
+	--cp-btn2-border-color: #2f6f5e;
 	--cp-btn2-shadow: none;
 	--cp-btn2-hover-shadow: none;
 	--cp-btn3-bg: #fffefb;
 	--cp-btn3-hover-bg: #f4f1ea;
 	--cp-btn3-fg: #4a473f;
-	--cp-btn3-border: 1.5px solid #bdb5a3;
+	--cp-btn3-border-color: #bdb5a3;
 	--cp-btn3-shadow: none;
 	--cp-btn3-hover-shadow: none;
 
 	--fab-bg: #fffdf8;
-	--fab-border: 1px solid #d6cfbf;
+	--fab-border-color: #d6cfbf;
 	--fab-shadow: 0 2px 8px rgba(90, 80, 60, 0.12);
 	/* 页脚（GitHub 链接）：小字、跟主题色，文字对比度 ≥ 4.5 */
 	--ft-fg: #3a7059;
 	--ft-fg-hover: #24584a;
 	--ft-hover-bg: rgba(58, 112, 89, 0.1);
 	--pv-bg: #e6e1d6;
-	--pv-radius: 8px;
 	--pv-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
-	--pv-pad: 20px 12px 4px;
 	--bn-bg: #eef3ef;
 	--bn-fg: #2f5a4e;
 	--bn-warn-bg: #f7efe2;
@@ -411,21 +430,20 @@ html[data-ui-theme='b'] {
 
 	/* 米白纸（已去掉左侧竖线） */
 	--s-page-bg: #fffdf7;
-	--s-page-radius: 2px;
 	--s-page-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 6px 18px rgba(80, 70, 50, 0.1);
 	--s-title-fg: #2b2a26;
-	--s-title-font: var(--font-fun);
 	--s-title-shadow: none;
 	--s-title-before: '🌿 ';
 	--s-title-after: ' 🌿';
-	--s-title-ls: 0.14em;
 	--s-sub-fg: #8c8676;
 	--s-info-fg: #4a473f;
 	--s-info-label: #2f6f5e;
-	--s-info-line: 1.5px solid #8c8676;
+	--s-info-line-style: solid;
+	--s-info-line-color: #8c8676;
 	--s-info-value: #2b2a26;
-	--s-grid-rule: 1px solid #cfc7b5;
-	--s-cell-rule: inset 0 -1px 0 #ebe4d5;
+	--s-grid-rule-style: solid;
+	--s-grid-rule-color: #cfc7b5;
+	--s-cell-shadow: inset 0 -1px 0 #ebe4d5;
 	--s-ink: #2b2a26;
 	--s-qno: #9a937f;
 	--s-num: #2b2a26;
@@ -439,11 +457,14 @@ html[data-ui-theme='b'] {
 	--s-vbox: #b9b09c;
 
 	/* 森林不画边框：左右两侧不要竖线 */
-	--s-frame: none;
+	--s-frame-style: solid;
+	--s-frame-color: transparent;
 	--s-header-bg: #f3f7f2;
-	--s-header-radius: 1mm;
 	--s-corner: '🌳';
 	--s-corner-bg: #fffdf7;
+
+	/* 和其它主题对齐：每个主题都给出同一组变量 */
+	--cp-input-fg: #34322d;
 }
 
 /* ============ 🌊 海洋（c）：白底、蓝色、对比清楚 ============ */
@@ -455,7 +476,7 @@ html[data-ui-theme='c'] {
 	--c-surface: #ffffff;
 	--c-surface-2: #f1f5f9;
 	--c-border: #e2e8f0;
-	--c-card-border: 1px solid #e2e8f0;
+	--c-card-border-color: #e2e8f0;
 	--c-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 	--c-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.16);
 	--c-focus: #3d6ef0;
@@ -474,29 +495,21 @@ html[data-ui-theme='c'] {
 	--c-chart-2: #e3ebff;
 	--c-badge-bg: #fffbeb;
 	--c-badge-border: #fcd34d;
-	--ui-font: var(--font-body);
 	--ui-bg: #f1f4f9;
 	--ui-fg: #0f172a;
 	--ui-muted: #64748b;
-	--ui-radius-sm: 10px;
 
 	--h-bg: #ffffff;
 	--h-fg: #1e293b;
-	--h-font: var(--font-fun);
-	--h-border: 1px solid #e2e8f0;
+	--h-border-color: #e2e8f0;
 	--h-title-fg: #0f172a;
-	--h-title-weight: 800;
 	--h-title-shadow: none;
 	--h-title-before: '🧮 ';
-	--h-title-after: '';
-	--h-title-ls: 0.02em;
-	--h-title-size: 1.9rem;
+	--h-title-after: ' 🌊';
 	--h-link-bg: #f1f5f9;
 	--h-link-hover: #e2e8f0;
 	--h-link-fg: #334155;
-	--h-link-radius: 12px;
 	--h-switch-bg: #f1f5f9;
-	--h-switch-radius: 12px;
 	--h-switch-label: #64748b;
 	--h-switch-fg: #334155;
 	--h-switch-hover: #e2e8f0;
@@ -505,45 +518,29 @@ html[data-ui-theme='c'] {
 	--h-switch-on-shadow: none;
 
 	--cp-bg: #ffffff;
-	--cp-border: 1px solid #e2e8f0;
-	--cp-radius: 16px;
+	--cp-border-color: #e2e8f0;
 	--cp-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-	--cp-font: var(--ui-font);
 	--cp-fg: #0f172a;
 	--cp-h2-fg: #0f172a;
-	--cp-h2-size: 1.4rem;
-	--cp-h2-weight: 800;
-	--cp-h2-align: left;
-	--cp-h2-before: '';
-	--cp-h2-margin: 0 0 1.3rem;
+	--cp-h2-before: '🐬 ';
 	--cp-label-fg: #334155;
 	--cp-ico-bg: #eef3ff;
-	--cp-ico-radius: 8px;
-	--cp-ico-size: 1.8em;
-	--cp-ico-font: 0.9em;
-	--cp-input-border: 1.5px solid #cbd5e1;
-	--cp-input-radius: 10px;
+	--cp-input-border-color: #cbd5e1;
 	--cp-input-bg: #ffffff;
 	--cp-input-fg: #0f172a;
 	--cp-focus-border: #3d6ef0;
 	--cp-focus-ring: 0 0 0 3px rgba(61, 110, 240, 0.18);
 	--cp-accent: #3d6ef0;
 	--cp-range-track: #e2e8f0;
-	--cp-chip-border: 1.5px solid #cbd5e1;
-	--cp-chip-radius: 10px;
+	--cp-chip-border-color: #cbd5e1;
 	--cp-chip-bg: #ffffff;
 	--cp-chip-on-bg: #eef3ff;
-	--cp-chip-on-border: 1.5px solid #3d6ef0;
+	--cp-chip-on-border-color: #3d6ef0;
 	--cp-chip-on-fg: #1e3a8a;
-	--cp-chip-on-weight: 600;
 	--cp-hint-fg: #64748b;
 	--cp-small-fg: #475569;
 	--cp-note-fg: #c2410c;
 	--cp-error-fg: #dc2626;
-	--cp-btn-radius: 12px;
-	--cp-btn-h: 54px;
-	--cp-btn-size: 1.25rem;
-	--cp-btn-hover-transform: none;
 	--cp-btn1-bg: #3d6ef0;
 	--cp-btn1-hover-bg: #2f5fe0;
 	--cp-btn1-fg: #ffffff;
@@ -557,42 +554,38 @@ html[data-ui-theme='c'] {
 	--cp-btn3-bg: #ffffff;
 	--cp-btn3-hover-bg: #f8fafc;
 	--cp-btn3-fg: #1e293b;
-	--cp-btn3-border: 1.5px solid #cbd5e1;
+	--cp-btn3-border-color: #cbd5e1;
 	--cp-btn3-shadow: none;
 	--cp-btn3-hover-shadow: none;
 
 	--fab-bg: #ffffff;
-	--fab-border: 1px solid #e2e8f0;
+	--fab-border-color: #e2e8f0;
 	--fab-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
 	/* 页脚（GitHub 链接）：小字、跟主题色，文字对比度 ≥ 4.5 */
 	--ft-fg: #3a64c8;
 	--ft-fg-hover: #1f449e;
 	--ft-hover-bg: rgba(58, 100, 200, 0.1);
 	--pv-bg: #e8edf4;
-	--pv-radius: 16px;
 	--pv-shadow: none;
-	--pv-pad: 20px 12px 4px;
 	--bn-bg: #eef3ff;
 	--bn-fg: #1e40af;
 	--bn-warn-bg: #fff7ed;
 	--bn-warn-fg: #9a3412;
 
 	--s-page-bg: #ffffff;
-	--s-page-radius: 10px;
 	--s-page-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
 	--s-title-fg: #0f172a;
-	--s-title-font: var(--font-fun);
-	--s-title-weight: 800;
 	--s-title-shadow: none;
 	--s-title-before: '🌊 ';
 	--s-title-after: ' ⛵';
-	--s-title-ls: 0.06em;
 	--s-sub-fg: #64748b;
 	--s-info-fg: #334155;
 	--s-info-label: #3d6ef0;
-	--s-info-line: 2px solid #cbd5e1;
+	--s-info-line-style: solid;
+	--s-info-line-color: #cbd5e1;
 	--s-info-value: #0f172a;
-	--s-grid-rule: 2px solid #e2e8f0;
+	--s-grid-rule-style: solid;
+	--s-grid-rule-color: #e2e8f0;
 	--s-ink: #0f172a;
 	--s-qno: #64748b;
 	--s-num: #0f172a;
@@ -605,12 +598,19 @@ html[data-ui-theme='c'] {
 	--s-rule-ink: #0f172a;
 	--s-vbox: #94a3b8;
 
-	--s-frame: 1.5px solid #d0def9;
-	--s-frame-radius: 4mm;
+	--s-frame-style: solid;
+	--s-frame-color: #d0def9;
 	--s-header-bg: #f3f7ff;
-	--s-header-radius: 3mm;
 	--s-corner: '🐳';
 	--s-corner-bg: #ffffff;
+
+	/* 和其它主题对齐：每个主题都给出同一组变量 */
+	--h-link-border-color: transparent;
+	--h-switch-border-color: transparent;
+	--cp-btn2-border-color: transparent;
+	--cp-ico-filter: none;
+	--cp-btn-ico-filter: none;
+	--s-cell-shadow: none;
 }
 
 /* ============ 全站基础样式 + 工具类（各页面直接用 class） ============ */
@@ -780,7 +780,10 @@ button,
 		--s-sub-fg: #555;
 		--s-info-fg: #000;
 		--s-info-value: #000;
-		--s-cell-rule: none;
+		--s-cell-shadow: none;
+		/* 打印线条统一细一点（三个主题一样粗） */
+		--s-info-line-bw: 1.5px;
+		--s-grid-rule-bw: 1.5px;
 		--s-corner-bg: #fff;
 		/* 题目本身：一律纯黑，清楚好认 */
 		--s-ink: #000;
@@ -797,28 +800,36 @@ button,
 	html:root[data-ui-theme='a'] {
 		--s-title-fg: #c8507a;
 		--s-info-label: #c8507a;
-		--s-info-line: 1.5px dashed #e6a4b8;
-		--s-grid-rule: 1.5px dotted #eeb6c6;
+		--s-info-line-style: dashed;
+		--s-info-line-color: #e6a4b8;
+		--s-grid-rule-style: dotted;
+		--s-grid-rule-color: #eeb6c6;
 		--s-vbox: #df9fb3;
-		--s-frame: 1.5px dashed #f0b9c9;
+		--s-frame-style: dashed;
+		--s-frame-color: #f0b9c9;
 		--s-header-bg: #fff4f7;
 	}
 	html:root[data-ui-theme='b'] {
 		--s-title-fg: #2f6f5e;
 		--s-info-label: #2f6f5e;
-		--s-info-line: 1.2px solid #86ab9b;
-		--s-grid-rule: 1px solid #adc9bb;
-		--s-cell-rule: inset 0 -1px 0 #dde9e2;
+		--s-info-line-style: solid;
+		--s-info-line-color: #86ab9b;
+		--s-grid-rule-style: solid;
+		--s-grid-rule-color: #adc9bb;
+		--s-cell-shadow: inset 0 -1px 0 #dde9e2;
 		--s-vbox: #8bb09f;
 		--s-header-bg: #f2f7f3;
 	}
 	html:root[data-ui-theme='c'] {
 		--s-title-fg: #2457d6;
 		--s-info-label: #2457d6;
-		--s-info-line: 1.5px solid #aac2f1;
-		--s-grid-rule: 1.5px solid #c6d6f6;
+		--s-info-line-style: solid;
+		--s-info-line-color: #aac2f1;
+		--s-grid-rule-style: solid;
+		--s-grid-rule-color: #c6d6f6;
 		--s-vbox: #91abe2;
-		--s-frame: 1.5px solid #c6d6f6;
+		--s-frame-style: solid;
+		--s-frame-color: #c6d6f6;
 		--s-header-bg: #f1f6ff;
 	}
 }
@@ -830,7 +841,9 @@ html:root[data-ink='print'] {
 	--s-sub-fg: #555;
 	--s-info-fg: #000;
 	--s-info-value: #000;
-	--s-cell-rule: none;
+	--s-cell-shadow: none;
+	--s-info-line-bw: 1.5px;
+	--s-grid-rule-bw: 1.5px;
 	--s-corner-bg: #fff;
 	/* 题目本身：一律纯黑，清楚好认 */
 	--s-ink: #000;
@@ -847,27 +860,35 @@ html:root[data-ink='print'] {
 html:root[data-ink='print'][data-ui-theme='a'] {
 	--s-title-fg: #c8507a;
 	--s-info-label: #c8507a;
-	--s-info-line: 1.5px dashed #e6a4b8;
-	--s-grid-rule: 1.5px dotted #eeb6c6;
+	--s-info-line-style: dashed;
+	--s-info-line-color: #e6a4b8;
+	--s-grid-rule-style: dotted;
+	--s-grid-rule-color: #eeb6c6;
 	--s-vbox: #df9fb3;
-	--s-frame: 1.5px dashed #f0b9c9;
+	--s-frame-style: dashed;
+	--s-frame-color: #f0b9c9;
 	--s-header-bg: #fff4f7;
 }
 html:root[data-ink='print'][data-ui-theme='b'] {
 	--s-title-fg: #2f6f5e;
 	--s-info-label: #2f6f5e;
-	--s-info-line: 1.2px solid #86ab9b;
-	--s-grid-rule: 1px solid #adc9bb;
-	--s-cell-rule: inset 0 -1px 0 #dde9e2;
+	--s-info-line-style: solid;
+	--s-info-line-color: #86ab9b;
+	--s-grid-rule-style: solid;
+	--s-grid-rule-color: #adc9bb;
+	--s-cell-shadow: inset 0 -1px 0 #dde9e2;
 	--s-vbox: #8bb09f;
 	--s-header-bg: #f2f7f3;
 }
 html:root[data-ink='print'][data-ui-theme='c'] {
 	--s-title-fg: #2457d6;
 	--s-info-label: #2457d6;
-	--s-info-line: 1.5px solid #aac2f1;
-	--s-grid-rule: 1.5px solid #c6d6f6;
+	--s-info-line-style: solid;
+	--s-info-line-color: #aac2f1;
+	--s-grid-rule-style: solid;
+	--s-grid-rule-color: #c6d6f6;
 	--s-vbox: #91abe2;
-	--s-frame: 1.5px solid #c6d6f6;
+	--s-frame-style: solid;
+	--s-frame-color: #c6d6f6;
 	--s-header-bg: #f1f6ff;
 }

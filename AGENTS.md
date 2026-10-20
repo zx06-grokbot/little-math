@@ -155,8 +155,10 @@ interface WrongRecord {
   - 覆盖所有页面：顶栏 `AppHeader`（导航 + 换颜色）在 `+layout.svelte`，全站通用的 `--c-*` 语义色和 `.ui-page / .ui-card / .ui-btn / .ui-input` 定义在 ui-themes.css
   - 底部页脚 `AppFooter`（一行小字 + GitHub 链接，颜色用各主题的 `--ft-*`）也在 `+layout.svelte`；打印和导出 PDF（`data-ink=print`）时隐藏，手机上留出右下角 📊 按钮的位置
   - 新增样式请用 CSS 变量，三个主题都要定义（`:root` 即糖果，森林 / 海洋覆盖）
+  - **版式只写一次**：字号、行高、字距、对齐、间距、元素尺寸、圆角、边框粗细、字体都只在 `ui-themes.css` 的 `:root` 定义；主题块（屏幕、`@media print`、`data-ink=print`）只能改颜色 / 底色 / 阴影 / 滤镜 / 装饰 emoji / 线型。边框写成 `--x-border: 2px solid var(--x-border-color, transparent)`，主题只给 `-color`（不要边框就给 `transparent`）
+  - 守卫：`src/lib/styles/uiThemesCss.test.ts`（主题块里出现版式属性 / 变量、长度单位、主题间变量集合不同、组件里写 `data-ui-theme='x'` 都会失败）；`tests/e2e/ui-themes.spec.ts` 里「三套主题版式一致」逐个比较关键元素的位置尺寸、字号、行高、对齐（电脑、手机、打印）
   - 不改横式数字槽 / 括号 / 竖式对齐逻辑，只改颜色、底色、圆角、间距和基准字号（整页统一字号仍由 `--fit-line-size` 决定）
-  - 打印、导出 PDF 跟随当前主题但省墨：白底、题目（数字 / 符号 / 括号 / 题号）纯黑；只有标题和信息栏文字、细线、浅色页眉、细边框和角落小图标带主题色（`@media print` 与导出时的 `html[data-ink=print]`，`print-color-adjust: exact`）。森林不画边框（左侧没有竖线）
+  - 打印、导出 PDF 跟随当前主题但省墨：白底、题目（数字 / 符号 / 括号 / 题号）纯黑；只有标题和信息栏文字、细线、浅色页眉、细边框和角落小图标带主题色（`@media print` 与导出时的 `html[data-ink=print]`，`print-color-adjust: exact`）。森林的卷面边框颜色是透明（看不到竖线，但粗细和其它主题一样）
   - `E2E_UI_THEME=a|b|c pnpm test:e2e` 可在指定主题下跑整套 e2e
 - **字体**（自托管在 `static/fonts/`，SIL OFL 1.1）：
   - `LM Nunito`（Nunito 可变字重，拉丁子集约 27KB）：数字和字母，0–9 在所有字重下都等宽，卷面数字槽靠 `1ch` 对齐不受影响

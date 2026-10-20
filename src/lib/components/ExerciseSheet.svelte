@@ -345,7 +345,7 @@
 		min-height: 0;
 		overflow: hidden;
 		/* 行底细线用 inset 阴影画，不占布局尺寸（不影响行高 / 字号计算） */
-		box-shadow: var(--s-cell-rule, none);
+		box-shadow: var(--s-cell-shadow, none);
 		break-inside: avoid;
 		page-break-inside: avoid;
 	}
