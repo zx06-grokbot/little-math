@@ -231,14 +231,85 @@ function canSpeak(): boolean {
 }
 
 export type SpeakOptions = {
-	/** 朗读结束后回调（取消/出错不调用） */
+	/** 朗读正常结束后回调（cancel / 出错不调用） */
 	onEnd?: () => void;
+	/** 朗读失败、不支持，或被 cancel 打断时回调 */
+	onError?: () => void;
 };
+
+/** 答对后：等表扬念完再跳题的缓冲（≤200ms） */
+export const CORRECT_ADVANCE_BUFFER_MS = 150;
+/** 关语音 / TTS 失败时的短延时回退 */
+export const CORRECT_ADVANCE_FALLBACK_MS = 800;
+
+export type CorrectAdvanceHandle = {
+	/** 当前选用的表扬文案（无语音时为默认句） */
+	praise: string;
+	/** 取消尚未触发的自动跳题计时（切题/离开时调用） */
+	cancel: () => void;
+};
+
+/**
+ * 安排答对后自动下一题：
+ * - 开语音：等表扬 onEnd 后再加短缓冲；
+ * - 关语音 / TTS 失败 / 被打断：退回 fallbackMs；
+ * - 自动跳题本身不 cancel 朗读（由调用方 moveToNext({ cancelSpeech:false })）。
+ */
+export function scheduleCorrectAdvance(opts: {
+	voiceEnabled: boolean;
+	speakCorrect: (cbs: { onEnd: () => void; onError: () => void }) => string;
+	advance: () => void;
+	bufferMs?: number;
+	fallbackMs?: number;
+	setTimeoutFn?: typeof setTimeout;
+	clearTimeoutFn?: typeof clearTimeout;
+}): CorrectAdvanceHandle {
+	const bufferMs = opts.bufferMs ?? CORRECT_ADVANCE_BUFFER_MS;
+	const fallbackMs = opts.fallbackMs ?? CORRECT_ADVANCE_FALLBACK_MS;
+	const setTimeoutFn = opts.setTimeoutFn ?? setTimeout;
+	const clearTimeoutFn = opts.clearTimeoutFn ?? clearTimeout;
+
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let settled = false;
+
+	const cancel = () => {
+		if (timer !== undefined) clearTimeoutFn(timer);
+		timer = undefined;
+		settled = true;
+	};
+
+	const runAdvance = (delay: number) => {
+		if (settled) return;
+		if (timer !== undefined) clearTimeoutFn(timer);
+		timer = setTimeoutFn(() => {
+			if (settled) return;
+			settled = true;
+			timer = undefined;
+			opts.advance();
+		}, delay);
+	};
+
+	if (!opts.voiceEnabled) {
+		runAdvance(fallbackMs);
+		return { praise: '答对啦！真棒！', cancel };
+	}
+
+	let praise = '答对啦！真棒！';
+	try {
+		praise = opts.speakCorrect({
+			onEnd: () => runAdvance(bufferMs),
+			onError: () => runAdvance(fallbackMs)
+		});
+	} catch {
+		runAdvance(fallbackMs);
+	}
+	return { praise, cancel };
+}
 
 function speakRaw(text: string, options: SpeakOptions = {}): void {
 	if (!canSpeak()) {
 		console.warn('Speech synthesis not supported');
-		options.onEnd?.();
+		options.onError?.();
 		return;
 	}
 
@@ -268,6 +339,7 @@ function speakRaw(text: string, options: SpeakOptions = {}): void {
 		if (finished) return;
 		finished = true;
 		if (currentUtterance === utterance) currentUtterance = null;
+		options.onError?.();
 	};
 
 	utterance.onend = finishOk;
@@ -278,8 +350,6 @@ function speakRaw(text: string, options: SpeakOptions = {}): void {
 	} catch (e) {
 		console.warn('Speech synthesis speak failed:', e);
 		finishErr();
-		// 朗读失败不挡做题：仍回调 onEnd，避免卡在「等念完」
-		options.onEnd?.();
 	}
 }
 

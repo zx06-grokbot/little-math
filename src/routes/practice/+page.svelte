@@ -26,7 +26,9 @@
 		isSpeechSupported,
 		isVoiceEnabled,
 		setVoiceEnabled,
-		shouldAutoSpeak
+		shouldAutoSpeak,
+		scheduleCorrectAdvance,
+		type CorrectAdvanceHandle
 	} from '#lib/services/speech.js';
 	import { savePracticeProgress, trackAnswer, getStats } from '#lib/services/statistics.js';
 	import AchievementToast from '#lib/components/AchievementToast.svelte';
@@ -65,6 +67,7 @@
 	let voiceOn = $state(true);
 	let advanceTimer: ReturnType<typeof setTimeout> | undefined;
 	let speakProblemTimer: ReturnType<typeof setTimeout> | undefined;
+	let correctAdvance: CorrectAdvanceHandle | undefined;
 
 	/** 在线练习不分页，校验时忽略「每页题数」 */
 	const practiceIssues = $derived(validateConfig({ ...config, countPerPage: 1 }));
@@ -77,6 +80,8 @@
 
 	function startWith(list: AnyProblem[]) {
 		if (list.length === 0) return false;
+		correctAdvance?.cancel();
+		correctAdvance = undefined;
 		stopSpeaking();
 		clearTimeout(advanceTimer);
 		clearTimeout(speakProblemTimer);
@@ -155,7 +160,20 @@
 	function toggleVoice() {
 		voiceOn = !voiceOn;
 		setVoiceEnabled(voiceOn);
-		if (!voiceOn) stopSpeaking();
+		if (!voiceOn) {
+			// 先取消等待，再 cancel 朗读，避免 onError 与新的 fallback 抢跑
+			correctAdvance?.cancel();
+			correctAdvance = undefined;
+			stopSpeaking();
+			// 关语音打断表扬时，退回短延时再跳题，避免卡在答对页
+			if (feedback?.isCorrect) {
+				correctAdvance = scheduleCorrectAdvance({
+					voiceEnabled: false,
+					speakCorrect: () => '答对啦！真棒！',
+					advance: () => moveToNext({ cancelSpeech: false })
+				});
+			}
+		}
 	}
 
 	function replayProblem() {
@@ -173,22 +191,24 @@
 		const fresh = checkAchievements(stats);
 		if (fresh.length) unlockedAchievements = [...unlockedAchievements, ...fresh];
 
+		correctAdvance?.cancel();
+		correctAdvance = undefined;
 		clearTimeout(advanceTimer);
 		clearTimeout(speakProblemTimer);
+		// 打断读题，改念答对/答错反馈
 		stopSpeaking();
 
 		if (isCorrect) {
-			let praise = '答对啦！真棒！';
-			if (voiceOn && speechSupported) {
-				try {
-					praise = speakCorrect();
-				} catch {
-					/* 朗读失败不挡反馈 */
-				}
-			}
-			feedback = { isCorrect: true, correctText: answerText(problem), praise };
-			// 约 0.8 秒后自动下一题（切题时 cancel 朗读，避免叠音）
-			advanceTimer = setTimeout(moveToNext, 800);
+			correctAdvance = scheduleCorrectAdvance({
+				voiceEnabled: voiceOn && speechSupported,
+				speakCorrect: (cbs) => speakCorrect(cbs),
+				advance: () => moveToNext({ cancelSpeech: false })
+			});
+			feedback = {
+				isCorrect: true,
+				correctText: answerText(problem),
+				praise: correctAdvance.praise
+			};
 		} else {
 			feedback = { isCorrect: false, correctText: answerText(problem) };
 			if (voiceOn && speechSupported) {
@@ -230,9 +250,13 @@
 		record(answer, problem.answer, answer === problem.answer);
 	}
 
-	function moveToNext() {
+	function moveToNext(opts: { cancelSpeech?: boolean } = {}) {
+		const cancelSpeech = opts.cancelSpeech !== false;
+		correctAdvance?.cancel();
+		correctAdvance = undefined;
 		clearTimeout(advanceTimer);
-		stopSpeaking();
+		// 自动跳题不打断刚念完的表扬；手动下一题 / 离开才 cancel
+		if (cancelSpeech) stopSpeaking();
 		feedback = null;
 		if (currentIndex < problems.length - 1) {
 			currentIndex++;
@@ -249,6 +273,8 @@
 	}
 
 	function handleRestart() {
+		correctAdvance?.cancel();
+		correctAdvance = undefined;
 		stopSpeaking();
 		phase = 'config';
 		reviewMessage = null;
@@ -256,6 +282,8 @@
 	}
 
 	function handleBackHome() {
+		correctAdvance?.cancel();
+		correctAdvance = undefined;
 		stopSpeaking();
 		goto('/');
 	}
@@ -282,7 +310,7 @@
 			<div class="practice-area ui-card" data-testid="practice-area">
 				<div class="top-bar">
 					<div class="progress" data-testid="practice-progress">
-						第 {currentIndex + 1} / {problems.length} 题
+						<span class="progress-label">第 {currentIndex + 1} / {problems.length} 题</span>
 						<span class="progress-bar" aria-hidden="true"><span style="width: {((currentIndex + 1) / problems.length) * 100}%"></span></span>
 					</div>
 					<div class="top-bar-right">
@@ -322,7 +350,7 @@
 							<div class="fb-title">🤗 再想想</div>
 							<div class="fb-answer">正确答案：<strong>{feedback.correctText}</strong></div>
 							<div class="full">{formatProblemText(problems[currentIndex], true)}</div>
-							<button class="next-btn ui-btn ui-btn-primary ui-btn-big" bind:this={nextBtn} onclick={moveToNext}>
+							<button class="next-btn ui-btn ui-btn-primary ui-btn-big" bind:this={nextBtn} onclick={() => moveToNext()}>
 								{currentIndex < problems.length - 1 ? '下一题 👉' : '看看成绩 🏅'}
 							</button>
 						{/if}
@@ -371,9 +399,10 @@
 	}
 	.top-bar {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: space-between;
 		align-items: center;
-		gap: 1rem;
+		gap: 0.65rem 0.75rem;
 		margin-bottom: 1rem;
 		padding-bottom: 1rem;
 		border-bottom: 2px dashed var(--c-border);
@@ -385,12 +414,19 @@
 		font-size: 1.25rem;
 		font-weight: 700;
 		color: var(--c-muted);
-		min-width: 0;
-		flex: 1 1 auto;
+		/* 不要 min-width:0，否则窄屏会把「第 N / M 题」挤成竖排 */
+		flex: 1 1 8.5rem;
+		min-width: 8.5rem;
+	}
+	.progress-label {
+		display: block;
+		white-space: nowrap;
+		line-height: 1.3;
 	}
 	.progress-bar {
 		display: block;
 		height: 10px;
+		width: 100%;
 		max-width: 260px;
 		border-radius: 999px;
 		background: var(--c-surface-2);
@@ -406,15 +442,16 @@
 	.top-bar-right {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		flex: 0 0 auto;
+		gap: 0.45rem;
+		flex: 1 1 auto;
 		flex-wrap: wrap;
 		justify-content: flex-end;
+		min-width: 0;
 	}
 	.voice-toggle {
-		min-width: 4.5rem;
-		padding: 0 0.65rem;
-		font-size: 1rem;
+		min-width: 0;
+		padding: 0 0.55rem;
+		font-size: 0.95rem;
 		font-weight: 700;
 		white-space: nowrap;
 	}
@@ -422,9 +459,9 @@
 		opacity: 0.65;
 	}
 	.speech-btn {
-		min-width: 56px;
-		padding: 0 0.75rem;
-		font-size: 1.5rem;
+		min-width: 48px;
+		padding: 0 0.55rem;
+		font-size: 1.35rem;
 	}
 	.feedback {
 		margin-top: 0.5rem;
@@ -472,8 +509,24 @@
 		.practice-area {
 			padding: 1.25rem 1rem 1.5rem;
 		}
+		.top-bar {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.55rem;
+		}
 		.progress {
 			font-size: 1.1rem;
+			flex: 0 0 auto;
+			min-width: 0;
+			width: 100%;
+		}
+		.progress-bar {
+			max-width: none;
+		}
+		.top-bar-right {
+			width: 100%;
+			justify-content: flex-start;
+			gap: 0.4rem;
 		}
 		.fb-title {
 			font-size: 1.5rem;
