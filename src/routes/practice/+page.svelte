@@ -18,7 +18,16 @@
 	import { addWrongRecord, generateWrongReview } from '#lib/services/wrongBook.js';
 	import { generateFavoriteReview } from '#lib/services/favorites.js';
 	import { checkAchievements, type Achievement } from '#lib/services/achievements.js';
-	import { speakProblem, isSpeechSupported } from '#lib/services/speech.js';
+	import {
+		speakProblem,
+		speakCorrect,
+		speakWrong,
+		stopSpeaking,
+		isSpeechSupported,
+		isVoiceEnabled,
+		setVoiceEnabled,
+		shouldAutoSpeak
+	} from '#lib/services/speech.js';
 	import { savePracticeProgress, trackAnswer, getStats } from '#lib/services/statistics.js';
 	import AchievementToast from '#lib/components/AchievementToast.svelte';
 
@@ -32,6 +41,7 @@
 	interface Feedback {
 		isCorrect: boolean;
 		correctText: string;
+		praise?: string;
 	}
 
 	let config: ExerciseConfig = $state({ ...DEFAULT_CONFIG, totalCount: 10 });
@@ -51,14 +61,25 @@
 	let remainderInputRef: { focus: () => void; clear: () => void } | undefined = $state();
 	let nextBtn: HTMLButtonElement | undefined = $state();
 	let unlockedAchievements = $state<Achievement[]>([]);
-	let showSpeechButton = $state(isSpeechSupported());
+	let speechSupported = $state(false);
+	let voiceOn = $state(true);
 	let advanceTimer: ReturnType<typeof setTimeout> | undefined;
+	let speakProblemTimer: ReturnType<typeof setTimeout> | undefined;
 
 	/** 在线练习不分页，校验时忽略「每页题数」 */
 	const practiceIssues = $derived(validateConfig({ ...config, countPerPage: 1 }));
 
+	$effect(() => {
+		if (!browser) return;
+		speechSupported = isSpeechSupported();
+		voiceOn = isVoiceEnabled();
+	});
+
 	function startWith(list: AnyProblem[]) {
 		if (list.length === 0) return false;
+		stopSpeaking();
+		clearTimeout(advanceTimer);
+		clearTimeout(speakProblemTimer);
 		problems = list;
 		currentIndex = 0;
 		correctCount = 0;
@@ -103,9 +124,43 @@
 		}
 	});
 
+	/** 出新题自动念；切题/有反馈时取消 */
+	$effect(() => {
+		if (!browser) return;
+		const idx = currentIndex;
+		const inPractice = phase === 'practice';
+		const hasFeedback = feedback !== null;
+		const listLen = problems.length;
+		clearTimeout(speakProblemTimer);
+		if (!inPractice || hasFeedback || listLen === 0) return;
+		const problem = problems[idx];
+		if (!problem) return;
+		if (!shouldAutoSpeak() || !voiceOn) {
+			stopSpeaking();
+			return;
+		}
+		speakProblemTimer = setTimeout(() => {
+			if (shouldAutoSpeak() && voiceOn) speakProblem(problem);
+		}, 120);
+		return () => {
+			clearTimeout(speakProblemTimer);
+		};
+	});
+
 	function answerText(p: AnyProblem): string {
 		if (isRemainder(p)) return `商 ${p.quotient}，余数 ${p.remainder}`;
 		return String(correctAnswerOf(p));
+	}
+
+	function toggleVoice() {
+		voiceOn = !voiceOn;
+		setVoiceEnabled(voiceOn);
+		if (!voiceOn) stopSpeaking();
+	}
+
+	function replayProblem() {
+		if (!voiceOn || !speechSupported) return;
+		speakProblem(problems[currentIndex]);
 	}
 
 	/** 记录一道题的作答并显示即时反馈 */
@@ -118,11 +173,31 @@
 		const fresh = checkAchievements(stats);
 		if (fresh.length) unlockedAchievements = [...unlockedAchievements, ...fresh];
 
-		feedback = { isCorrect, correctText: answerText(problem) };
 		clearTimeout(advanceTimer);
+		clearTimeout(speakProblemTimer);
+		stopSpeaking();
+
 		if (isCorrect) {
-			advanceTimer = setTimeout(moveToNext, 900);
+			let praise = '答对啦！真棒！';
+			if (voiceOn && speechSupported) {
+				try {
+					praise = speakCorrect();
+				} catch {
+					/* 朗读失败不挡反馈 */
+				}
+			}
+			feedback = { isCorrect: true, correctText: answerText(problem), praise };
+			// 约 0.8 秒后自动下一题（切题时 cancel 朗读，避免叠音）
+			advanceTimer = setTimeout(moveToNext, 800);
 		} else {
+			feedback = { isCorrect: false, correctText: answerText(problem) };
+			if (voiceOn && speechSupported) {
+				try {
+					speakWrong(problem);
+				} catch {
+					/* 朗读失败不挡反馈 */
+				}
+			}
 			setTimeout(() => nextBtn?.focus(), 0);
 		}
 	}
@@ -157,6 +232,7 @@
 
 	function moveToNext() {
 		clearTimeout(advanceTimer);
+		stopSpeaking();
 		feedback = null;
 		if (currentIndex < problems.length - 1) {
 			currentIndex++;
@@ -173,12 +249,14 @@
 	}
 
 	function handleRestart() {
+		stopSpeaking();
 		phase = 'config';
 		reviewMessage = null;
 		if (page.url.searchParams.get('mode')) goto('/practice', { replace: true });
 	}
 
 	function handleBackHome() {
+		stopSpeaking();
 		goto('/');
 	}
 </script>
@@ -191,7 +269,15 @@
 	<main>
 		{#if phase === 'config'}
 			{#if reviewMessage}<p class="review-msg" data-testid="review-msg">{reviewMessage}</p>{/if}
-			<PracticeConfig bind:config issues={practiceIssues} error={startError} onStart={handleStart} />
+			<PracticeConfig
+				bind:config
+				issues={practiceIssues}
+				error={startError}
+				onStart={handleStart}
+				{speechSupported}
+				bind:voiceOn
+				onToggleVoice={toggleVoice}
+			/>
 		{:else if phase === 'practice' && problems.length > 0}
 			<div class="practice-area ui-card" data-testid="practice-area">
 				<div class="top-bar">
@@ -200,16 +286,29 @@
 						<span class="progress-bar" aria-hidden="true"><span style="width: {((currentIndex + 1) / problems.length) * 100}%"></span></span>
 					</div>
 					<div class="top-bar-right">
-						{#if showSpeechButton}
+						{#if speechSupported}
 							<button
-								class="speech-btn ui-btn ui-btn-quiet"
-								onclick={() => speakProblem(problems[currentIndex])}
-								title="读给我听"
-								aria-label="读给我听"
-								data-testid="speech-btn"
+								class="voice-toggle ui-btn ui-btn-quiet"
+								class:off={!voiceOn}
+								onclick={toggleVoice}
+								title={voiceOn ? '关闭语音' : '打开语音'}
+								aria-label={voiceOn ? '关闭语音' : '打开语音'}
+								aria-pressed={voiceOn}
+								data-testid="voice-toggle"
 							>
-								🔊
+								{voiceOn ? '🔊 语音' : '🔇 语音'}
 							</button>
+							{#if voiceOn}
+								<button
+									class="speech-btn ui-btn ui-btn-quiet"
+									onclick={replayProblem}
+									title="读给我听"
+									aria-label="读给我听"
+									data-testid="speech-btn"
+								>
+									🔊
+								</button>
+							{/if}
 						{/if}
 						<Timer bind:this={timerRef} running={timerRunning} />
 					</div>
@@ -218,9 +317,9 @@
 				{#if feedback}
 					<div class="feedback" class:ok={feedback.isCorrect} class:bad={!feedback.isCorrect} data-testid="feedback" role="status">
 						{#if feedback.isCorrect}
-							<div class="fb-title">🎉 答对啦！</div>
+							<div class="fb-title">🎉 {feedback.praise ?? '答对啦！真棒！'}</div>
 						{:else}
-							<div class="fb-title">🤗 差一点点！</div>
+							<div class="fb-title">🤗 再想想</div>
 							<div class="fb-answer">正确答案：<strong>{feedback.correctText}</strong></div>
 							<div class="full">{formatProblemText(problems[currentIndex], true)}</div>
 							<button class="next-btn ui-btn ui-btn-primary ui-btn-big" bind:this={nextBtn} onclick={moveToNext}>
@@ -246,6 +345,7 @@
 				correct={correctCount}
 				timeSpent={finalTime}
 				records={answerRecords}
+				voiceEnabled={voiceOn && speechSupported}
 				onRestart={handleRestart}
 				onBackHome={handleBackHome}
 			/>
@@ -306,8 +406,20 @@
 	.top-bar-right {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 		flex: 0 0 auto;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+	.voice-toggle {
+		min-width: 4.5rem;
+		padding: 0 0.65rem;
+		font-size: 1rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+	.voice-toggle.off {
+		opacity: 0.65;
 	}
 	.speech-btn {
 		min-width: 56px;
