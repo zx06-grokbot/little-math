@@ -1,5 +1,12 @@
-import type { AnyProblem, Problem, MakeTargetProblem, ChainProblem, CompareProblem, RemainderProblem } from '#lib/types.js';
-import { OP_SYMBOLS } from '#lib/types.js';
+import type {
+	AnyProblem,
+	Problem,
+	MakeTargetProblem,
+	ChainProblem,
+	CompareProblem,
+	RemainderProblem,
+	CompareSymbol
+} from '#lib/types.js';
 
 const NUMBER_WORDS: Record<number, string> = {
 	0: '零',
@@ -40,19 +47,37 @@ const OPERATION_WORDS: Record<string, string> = {
 	div: '除以'
 };
 
-function numberToWords(num: number): string {
+const COMPARE_WORDS: Record<CompareSymbol, string> = {
+	'>': '大于',
+	'<': '小于',
+	'=': '等于'
+};
+
+/** 空位朗读用「多少」（不是「空白」） */
+const BLANK_WORD = '多少';
+
+export const VOICE_STORAGE_KEY = 'little-math-voice-enabled';
+
+export const CORRECT_PRAISES = [
+	'答对啦！真棒！',
+	'对了！继续加油！',
+	'太厉害了！',
+	'完全正确！',
+	'棒棒的！'
+] as const;
+
+/** 数字转中文读法（供测试与答对/答错文案） */
+export function numberToWords(num: number): string {
 	if (NUMBER_WORDS[num]) {
 		return NUMBER_WORDS[num];
 	}
 
-	// 处理 20-99
 	if (num < 100) {
 		const tens = Math.floor(num / 10) * 10;
 		const units = num % 10;
 		return (NUMBER_WORDS[tens] || '') + (units > 0 ? NUMBER_WORDS[units] : '');
 	}
 
-	// 处理 100-999
 	if (num < 1000) {
 		const hundreds = Math.floor(num / 100);
 		const remainder = num % 100;
@@ -66,12 +91,17 @@ function numberToWords(num: number): string {
 	return num.toString();
 }
 
-function problemToText(problem: AnyProblem): string {
+export function compareSymbolToWords(symbol: CompareSymbol): string {
+	return COMPARE_WORDS[symbol];
+}
+
+/** 题目朗读文案：空位念「多少」；比较题念「比较」 */
+export function problemToText(problem: AnyProblem): string {
 	if ('type' in problem) {
 		if (problem.type === 'makeTarget') {
 			const p = problem as MakeTargetProblem;
-			const blankWord = p.blankFirst ? '空白' : numberToWords(p.a);
-			const otherWord = p.blankFirst ? numberToWords(p.a) : '空白';
+			const blankWord = p.blankFirst ? BLANK_WORD : numberToWords(p.a);
+			const otherWord = p.blankFirst ? numberToWords(p.a) : BLANK_WORD;
 			return `${blankWord} 加 ${otherWord} 等于 ${numberToWords(p.target)}`;
 		}
 
@@ -80,7 +110,7 @@ function problemToText(problem: AnyProblem): string {
 			const parts: string[] = [];
 			for (let i = 0; i < p.numbers.length; i++) {
 				if (p.blank === i) {
-					parts.push('空白');
+					parts.push(BLANK_WORD);
 				} else {
 					parts.push(numberToWords(p.numbers[i]));
 				}
@@ -90,7 +120,7 @@ function problemToText(problem: AnyProblem): string {
 			}
 			parts.push('等于');
 			if (p.blank === 'result') {
-				parts.push('空白');
+				parts.push(BLANK_WORD);
 			} else {
 				parts.push(numberToWords(p.result));
 			}
@@ -107,53 +137,119 @@ function problemToText(problem: AnyProblem): string {
 		if (problem.type === 'remainder') {
 			const p = problem as RemainderProblem;
 			let text = `${numberToWords(p.dividend)} 除以 ${numberToWords(p.divisor)} 等于 `;
-			
+
 			if (p.blank === 'quotient' || p.blank === 'both') {
-				text += '空白';
+				text += BLANK_WORD;
 			} else {
 				text += numberToWords(p.quotient);
 			}
-			
+
 			text += ' 余 ';
-			
+
 			if (p.blank === 'remainder' || p.blank === 'both') {
-				text += '空白';
+				text += BLANK_WORD;
 			} else {
 				text += numberToWords(p.remainder);
 			}
-			
+
 			return text;
 		}
 	}
 
-	// 普通题目
 	const p = problem as Problem;
-	const first = p.blank === 'first' ? '空白' : numberToWords(p.a);
-	const second = p.blank === 'second' ? '空白' : numberToWords(p.b);
-	const result = p.blank === 'result' ? '空白' : numberToWords(p.result);
+	const first = p.blank === 'first' ? BLANK_WORD : numberToWords(p.a);
+	const second = p.blank === 'second' ? BLANK_WORD : numberToWords(p.b);
+	const result = p.blank === 'result' ? BLANK_WORD : numberToWords(p.result);
 	return `${first} ${OPERATION_WORDS[p.op]} ${second} 等于 ${result}`;
+}
+
+/** 正确答案的朗读文案（数字用中文；比较用大于/小于/等于） */
+export function correctAnswerToText(problem: AnyProblem): string {
+	if ('type' in problem) {
+		if (problem.type === 'makeTarget') {
+			return numberToWords((problem as MakeTargetProblem).answer);
+		}
+		if (problem.type === 'chain') {
+			const p = problem as ChainProblem;
+			const v = p.blank === 'result' ? p.result : p.numbers[p.blank];
+			return numberToWords(v);
+		}
+		if (problem.type === 'compare') {
+			return compareSymbolToWords((problem as CompareProblem).answer);
+		}
+		if (problem.type === 'remainder') {
+			const p = problem as RemainderProblem;
+			if (p.blank === 'quotient') return numberToWords(p.quotient);
+			if (p.blank === 'remainder') return numberToWords(p.remainder);
+			return `商${numberToWords(p.quotient)}余${numberToWords(p.remainder)}`;
+		}
+	}
+	const p = problem as Problem;
+	const v = p.blank === 'first' ? p.a : p.blank === 'second' ? p.b : p.result;
+	return numberToWords(v);
+}
+
+export function wrongFeedbackText(problem: AnyProblem): string {
+	return `再想想。正确答案是${correctAnswerToText(problem)}。`;
+}
+
+export function pickCorrectPraise(random = Math.random): string {
+	const i = Math.floor(random() * CORRECT_PRAISES.length) % CORRECT_PRAISES.length;
+	return CORRECT_PRAISES[i];
+}
+
+/** 结果页总结朗读（与页面表扬一致） */
+export function summaryToText(opts: {
+	total: number;
+	correct: number;
+	timeSpent: number;
+}): string {
+	const { total, correct, timeSpent } = opts;
+	const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+	const mins = Math.floor(timeSpent / 60);
+	const secs = timeSpent % 60;
+
+	if (accuracy === 100) {
+		return `全对啦！你太棒了！一共做了 ${total} 道题，用了 ${mins} 分 ${secs} 秒。`;
+	}
+	if (accuracy >= 90) {
+		return `真厉害！差一点就全对啦！答对了 ${correct} 道，正确率百分之 ${accuracy}。`;
+	}
+	if (accuracy >= 70) {
+		return `做得很好！继续加油！答对了 ${correct} 道，正确率百分之 ${accuracy}。`;
+	}
+	if (accuracy >= 50) {
+		return `不错哦！多练练会更棒！答对了 ${correct} 道，正确率百分之 ${accuracy}。`;
+	}
+	return `没关系，再来一次一定更好！答对了 ${correct} 道，我们再练练。`;
 }
 
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 
-export function speakProblem(problem: AnyProblem): void {
-	if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+function canSpeak(): boolean {
+	return typeof window !== 'undefined' && 'speechSynthesis' in window;
+}
+
+export type SpeakOptions = {
+	/** 朗读结束后回调（取消/出错不调用） */
+	onEnd?: () => void;
+};
+
+function speakRaw(text: string, options: SpeakOptions = {}): void {
+	if (!canSpeak()) {
 		console.warn('Speech synthesis not supported');
+		options.onEnd?.();
 		return;
 	}
 
-	// 停止当前语音
-	if (currentUtterance) {
-		window.speechSynthesis.cancel();
-	}
+	window.speechSynthesis.cancel();
+	currentUtterance = null;
 
-	const text = problemToText(problem);
 	const utterance = new SpeechSynthesisUtterance(text);
 	utterance.lang = 'zh-CN';
-	utterance.rate = 0.9; // 稍慢一点，适合儿童
-	utterance.pitch = 1.1; // 稍高一点，更亲切
+	utterance.rate = 0.9;
+	utterance.pitch = 1.1;
 
-	// 尝试选择中文语音
 	const voices = window.speechSynthesis.getVoices();
 	const chineseVoice = voices.find((voice) => voice.lang.startsWith('zh'));
 	if (chineseVoice) {
@@ -161,27 +257,97 @@ export function speakProblem(problem: AnyProblem): void {
 	}
 
 	currentUtterance = utterance;
-	window.speechSynthesis.speak(utterance);
-
-	// 语音结束后清除引用
-	utterance.onend = () => {
-		currentUtterance = null;
+	let finished = false;
+	const finishOk = () => {
+		if (finished) return;
+		finished = true;
+		if (currentUtterance === utterance) currentUtterance = null;
+		options.onEnd?.();
+	};
+	const finishErr = () => {
+		if (finished) return;
+		finished = true;
+		if (currentUtterance === utterance) currentUtterance = null;
 	};
 
-	utterance.onerror = () => {
-		currentUtterance = null;
-	};
+	utterance.onend = finishOk;
+	utterance.onerror = finishErr;
+
+	try {
+		window.speechSynthesis.speak(utterance);
+	} catch (e) {
+		console.warn('Speech synthesis speak failed:', e);
+		finishErr();
+		// 朗读失败不挡做题：仍回调 onEnd，避免卡在「等念完」
+		options.onEnd?.();
+	}
+}
+
+export function speakText(text: string, options?: SpeakOptions): void {
+	speakRaw(text, options);
+}
+
+export function speakProblem(problem: AnyProblem, options?: SpeakOptions): void {
+	speakRaw(problemToText(problem), options);
+}
+
+export function speakCorrect(options?: SpeakOptions & { random?: () => number }): string {
+	const praise = pickCorrectPraise(options?.random);
+	speakRaw(praise, options);
+	return praise;
+}
+
+export function speakWrong(problem: AnyProblem, options?: SpeakOptions): string {
+	const text = wrongFeedbackText(problem);
+	speakRaw(text, options);
+	return text;
+}
+
+export function speakSummary(
+	opts: { total: number; correct: number; timeSpent: number },
+	options?: SpeakOptions
+): string {
+	const text = summaryToText(opts);
+	speakRaw(text, options);
+	return text;
 }
 
 export function stopSpeaking(): void {
-	if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-		return;
+	if (!canSpeak()) return;
+	try {
+		window.speechSynthesis.cancel();
+	} catch {
+		/* ignore */
 	}
-
-	window.speechSynthesis.cancel();
 	currentUtterance = null;
 }
 
 export function isSpeechSupported(): boolean {
-	return typeof window !== 'undefined' && 'speechSynthesis' in window;
+	return canSpeak();
+}
+
+/** 语音开关：默认开；localStorage 持久化 */
+export function isVoiceEnabled(): boolean {
+	if (typeof localStorage === 'undefined') return true;
+	try {
+		const v = localStorage.getItem(VOICE_STORAGE_KEY);
+		if (v === null) return true;
+		return v === '1' || v === 'true';
+	} catch {
+		return true;
+	}
+}
+
+export function setVoiceEnabled(enabled: boolean): void {
+	try {
+		localStorage.setItem(VOICE_STORAGE_KEY, enabled ? '1' : '0');
+	} catch {
+		/* 隐私模式等忽略 */
+	}
+	if (!enabled) stopSpeaking();
+}
+
+/** 是否应自动朗读（支持 speechSynthesis 且开关打开） */
+export function shouldAutoSpeak(): boolean {
+	return isSpeechSupported() && isVoiceEnabled();
 }

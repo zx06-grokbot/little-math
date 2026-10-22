@@ -61,30 +61,44 @@ test.describe('B. 在线练习', () => {
 		expect(wrongBook.length).toBe(1);
 	});
 
-	test('B9 语音读题按钮点击不抛错', async ({ page }) => {
-		await page.addInitScript(() => {
-			(window as any).speechSynthesis = {
+	function stubSpeech() {
+		return `(() => {
+			const spoken = [];
+			(window).speechSynthesis = {
 				speaking: false,
 				pending: false,
 				paused: false,
 				getVoices: () => [{ lang: 'zh-CN', name: 'stub' }],
-				speak: () => {},
+				speak: (u) => { spoken.push(u && u.text); if (u && typeof u.onend === 'function') setTimeout(() => u.onend(), 0); },
 				cancel: () => {},
 				pause: () => {},
 				resume: () => {},
 				addEventListener: () => {},
 				removeEventListener: () => {}
 			};
-			(window as any).SpeechSynthesisUtterance = function (this: any, text: string) {
-				this.text = text;
-			};
-		});
+			(window).SpeechSynthesisUtterance = function (text) { this.text = text; };
+			(window).__spoken = spoken;
+		})()`;
+	}
+
+	test('B9 语音读题按钮与开关', async ({ page }) => {
+		await page.addInitScript(stubSpeech());
+		await page.goto('/practice');
+		const toggle = page.getByTestId('voice-toggle');
+		await expect(toggle).toBeVisible();
+		await expect(toggle).toContainText('语音');
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
+		await expect(page.getByTestId('voice-toggle')).toBeVisible();
 		const btn = page.getByTestId('speech-btn');
-		if ((await btn.count()) > 0) {
-			await btn.click();
-			await expect(page.getByTestId('practice-area')).toBeVisible();
-		}
+		await expect(btn).toBeVisible();
+		await btn.click();
+		await expect(page.getByTestId('practice-area')).toBeVisible();
+		// 关掉语音后喇叭消失，只保留开关
+		await page.getByTestId('voice-toggle').click();
+		await expect(page.getByTestId('speech-btn')).toHaveCount(0);
+		await expect(page.getByTestId('voice-toggle')).toContainText('语音');
+		const stored = await page.evaluate(() => localStorage.getItem('little-math-voice-enabled'));
+		expect(stored).toBe('0');
 	});
 });
 

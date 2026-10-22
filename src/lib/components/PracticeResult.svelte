@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { AnyProblem, CompareSymbol } from '#lib/types.js';
 	import { addFavorite, getFavorites, removeFavorite } from '#lib/services/favorites.js';
 	import { formatProblemText, problemId } from '#lib/format.js';
+	import { speakSummary, stopSpeaking } from '#lib/services/speech.js';
 
 	interface AnswerRecord {
 		problem: AnyProblem;
@@ -15,14 +17,25 @@
 		correct: number;
 		timeSpent: number;
 		records: AnswerRecord[];
+		voiceEnabled?: boolean;
 		onRestart: () => void;
 		onBackHome: () => void;
 	}
 
-	let { total, correct, timeSpent, records, onRestart, onBackHome }: Props = $props();
+	let { total, correct, timeSpent, records, voiceEnabled = false, onRestart, onBackHome }: Props = $props();
 
 	let accuracy = $derived(total > 0 ? Math.round((correct / total) * 100) : 0);
 	let avgTime = $derived(total > 0 ? Math.round(timeSpent / total) : 0);
+
+	onMount(() => {
+		if (voiceEnabled) {
+			const t = setTimeout(() => speakSummary({ total, correct, timeSpent }), 200);
+			return () => {
+				clearTimeout(t);
+				stopSpeaking();
+			};
+		}
+	});
 
 	function formatTime(s: number): string {
 		const mins = Math.floor(s / 60);

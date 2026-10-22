@@ -10,9 +10,20 @@
 		issues?: ValidationIssue[];
 		error?: string | null;
 		onStart: () => void;
+		speechSupported?: boolean;
+		voiceOn?: boolean;
+		onToggleVoice?: () => void;
 	}
 
-	let { config = $bindable(), issues = [], error = null, onStart }: Props = $props();
+	let {
+		config = $bindable(),
+		issues = [],
+		error = null,
+		onStart,
+		speechSupported = false,
+		voiceOn = $bindable(true),
+		onToggleVoice
+	}: Props = $props();
 
 	function handlePresetChange(e: Event) {
 		const target = e.target as HTMLSelectElement;
@@ -132,6 +143,24 @@
 		</label>
 	</div>
 
+	{#if speechSupported}
+		<div class="config-row voice-row">
+			<button
+				type="button"
+				class="voice-toggle ui-btn ui-btn-quiet"
+				class:off={!voiceOn}
+				onclick={() => onToggleVoice?.()}
+				title={voiceOn ? '关闭语音' : '打开语音'}
+				aria-label={voiceOn ? '关闭语音' : '打开语音'}
+				aria-pressed={voiceOn}
+				data-testid="voice-toggle"
+			>
+				{voiceOn ? '🔊 语音' : '🔇 语音'}
+				<span class="voice-hint">{voiceOn ? '开着，出题会念给你听' : '关着，只显示文字'}</span>
+			</button>
+		</div>
+	{/if}
+
 	{#each issues as issue}<p class="error" role="alert">{issue.message}</p>{/each}
 	{#if error && issues.length === 0}<p class="error" role="alert">{error}</p>{/if}
 
@@ -238,6 +267,28 @@
 		padding: 0.55rem 0.8rem;
 		font-size: 1rem;
 		margin: 0.5rem 0;
+	}
+	.voice-row {
+		margin-bottom: 0.5rem;
+	}
+	.voice-toggle {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		min-height: 52px;
+		padding: 0.6rem 1rem;
+		font-size: 1.15rem;
+		font-weight: 700;
+	}
+	.voice-toggle.off {
+		opacity: 0.7;
+	}
+	.voice-hint {
+		font-size: 0.95rem;
+		font-weight: 500;
+		color: var(--c-muted);
 	}
 	.start-btn {
 		width: 100%;
