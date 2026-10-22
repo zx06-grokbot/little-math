@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
 	numberToWords,
 	problemToText,
@@ -9,7 +9,8 @@ import {
 	CORRECT_PRAISES,
 	isVoiceEnabled,
 	setVoiceEnabled,
-	VOICE_STORAGE_KEY
+	VOICE_STORAGE_KEY,
+	scheduleCorrectAdvance
 } from './speech.js';
 import type {
 	Problem,
@@ -180,5 +181,99 @@ describe('语音开关持久化', () => {
 		setVoiceEnabled(true);
 		expect(isVoiceEnabled()).toBe(true);
 		expect(localStorage.getItem(VOICE_STORAGE_KEY)).toBe('1');
+	});
+});
+
+describe('scheduleCorrectAdvance', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('关语音：fallbackMs 后跳题，不调用 speak', () => {
+		const advance = vi.fn();
+		const speakCorrect = vi.fn(() => '太厉害了！');
+		const { praise } = scheduleCorrectAdvance({
+			voiceEnabled: false,
+			speakCorrect,
+			advance,
+			fallbackMs: 800,
+			setTimeoutFn: setTimeout as typeof setTimeout,
+			clearTimeoutFn: clearTimeout as typeof clearTimeout
+		});
+		expect(praise).toBe('答对啦！真棒！');
+		expect(speakCorrect).not.toHaveBeenCalled();
+		expect(advance).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(799);
+		expect(advance).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1);
+		expect(advance).toHaveBeenCalledTimes(1);
+	});
+
+	it('开语音：等 onEnd 后再加 bufferMs 跳题', () => {
+		const advance = vi.fn();
+		let cbs: { onEnd: () => void; onError: () => void } | undefined;
+		const { praise } = scheduleCorrectAdvance({
+			voiceEnabled: true,
+			speakCorrect: (c) => {
+				cbs = c;
+				return '完全正确！';
+			},
+			advance,
+			bufferMs: 150,
+			fallbackMs: 800,
+			setTimeoutFn: setTimeout as typeof setTimeout,
+			clearTimeoutFn: clearTimeout as typeof clearTimeout
+		});
+		expect(praise).toBe('完全正确！');
+		expect(advance).not.toHaveBeenCalled();
+		cbs!.onEnd();
+		vi.advanceTimersByTime(149);
+		expect(advance).not.toHaveBeenCalled();
+		vi.advanceTimersByTime(1);
+		expect(advance).toHaveBeenCalledTimes(1);
+	});
+
+	it('开语音但 TTS 失败：fallbackMs 后跳题', () => {
+		const advance = vi.fn();
+		let cbs: { onEnd: () => void; onError: () => void } | undefined;
+		scheduleCorrectAdvance({
+			voiceEnabled: true,
+			speakCorrect: (c) => {
+				cbs = c;
+				return '棒棒的！';
+			},
+			advance,
+			bufferMs: 150,
+			fallbackMs: 800,
+			setTimeoutFn: setTimeout as typeof setTimeout,
+			clearTimeoutFn: clearTimeout as typeof clearTimeout
+		});
+		cbs!.onError();
+		vi.advanceTimersByTime(800);
+		expect(advance).toHaveBeenCalledTimes(1);
+	});
+
+	it('cancel 后不再跳题', () => {
+		const advance = vi.fn();
+		let cbs: { onEnd: () => void; onError: () => void } | undefined;
+		const handle = scheduleCorrectAdvance({
+			voiceEnabled: true,
+			speakCorrect: (c) => {
+				cbs = c;
+				return '对了！继续加油！';
+			},
+			advance,
+			bufferMs: 150,
+			setTimeoutFn: setTimeout as typeof setTimeout,
+			clearTimeoutFn: clearTimeout as typeof clearTimeout
+		});
+		cbs!.onEnd();
+		handle.cancel();
+		vi.advanceTimersByTime(500);
+		expect(advance).not.toHaveBeenCalled();
 	});
 });
