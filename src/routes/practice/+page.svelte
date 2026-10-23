@@ -19,6 +19,10 @@
 		createExitGuardState,
 		decideExit,
 		setExitGuardActive,
+		ensureExitGuardPush,
+		pushExitGuardHistory,
+		clearExitGuardHistory,
+		handleExitGuardPopstate,
 		EXIT_GUARD_HINT,
 		EXIT_GUARD_WINDOW_MS
 	} from '#lib/services/exitGuard.js';
@@ -89,16 +93,6 @@
 		voiceOn = isVoiceEnabled();
 	});
 
-	/** 仅对局进行中拦截离开；结果页/配置页不拦 */
-	$effect(() => {
-		const should = phase === 'practice';
-		exitGuard = setExitGuardActive(untrack(() => exitGuard), should);
-		if (!should) {
-			exitHint = '';
-			clearTimeout(exitHintTimer);
-		}
-	});
-
 	function flashExitHint() {
 		exitHint = EXIT_GUARD_HINT;
 		clearTimeout(exitHintTimer);
@@ -107,13 +101,67 @@
 		}, EXIT_GUARD_WINDOW_MS);
 	}
 
+	/**
+	 * 对局中：history.pushState 垫一层 + popstate 拦侧滑/系统返回；
+	 * beforeNavigate 拦顶栏链接等（popstate 交给下面监听，避免双重 decideExit）。
+	 */
+	$effect(() => {
+		const should = phase === 'practice';
+		exitGuard = setExitGuardActive(untrack(() => exitGuard), should);
+		if (!browser) return;
+
+		if (!should) {
+			exitHint = '';
+			clearTimeout(exitHintTimer);
+			try {
+				clearExitGuardHistory(history);
+			} catch {
+				/* 隐私模式等忽略 */
+			}
+			return;
+		}
+
+		try {
+			ensureExitGuardPush(history);
+		} catch {
+			/* ignore */
+		}
+
+		let bypassPop = false;
+		const onPopState = () => {
+			if (bypassPop) return;
+			const r = handleExitGuardPopstate(untrack(() => exitGuard));
+			exitGuard = r.next;
+			if (r.repush) {
+				try {
+					pushExitGuardHistory(history);
+				} catch {
+					/* ignore */
+				}
+				if (r.showHint) flashExitHint();
+			}
+			if (r.continueBack) {
+				// 垫层已被 pop；再 back 一次离开上一页（首页等）
+				bypassPop = true;
+				try {
+					history.back();
+				} finally {
+					queueMicrotask(() => {
+						bypassPop = false;
+					});
+				}
+			}
+		};
+		window.addEventListener('popstate', onPopState);
+		return () => window.removeEventListener('popstate', onPopState);
+	});
+
 	beforeNavigate((nav) => {
 		if (phase !== 'practice') return;
+		// 侧滑/系统返回由 pushState + popstate 处理
+		if (nav.type === 'popstate') return;
 		// 仍停在 /practice（清 query、浅路由等）放行
-		const staying =
-			nav.type !== 'leave' &&
-			nav.to != null &&
-			nav.to.url.pathname === '/practice';
+		const staying = nav.to != null && nav.to.url.pathname === '/practice';
 		if (staying) return;
 		const r = decideExit(exitGuard);
 		exitGuard = r.next;
