@@ -5,8 +5,37 @@ import {
 	decideExit,
 	isExitArmed,
 	EXIT_GUARD_WINDOW_MS,
-	EXIT_GUARD_HINT
+	EXIT_GUARD_HINT,
+	EXIT_GUARD_HISTORY_KEY,
+	hasExitGuardHistory,
+	buildExitGuardHistoryState,
+	stripExitGuardHistoryState,
+	pushExitGuardHistory,
+	ensureExitGuardPush,
+	clearExitGuardHistory,
+	handleExitGuardPopstate,
+	type HistoryLike
 } from './exitGuard.js';
+
+function mockHistory(initialState: unknown = null): HistoryLike & { stack: unknown[] } {
+	const stack: unknown[] = [initialState];
+	const h: HistoryLike & { stack: unknown[] } = {
+		stack,
+		get state() {
+			return stack[stack.length - 1];
+		},
+		pushState(data: unknown) {
+			stack.push(data);
+		},
+		replaceState(data: unknown) {
+			stack[stack.length - 1] = data;
+		},
+		back() {
+			if (stack.length > 1) stack.pop();
+		}
+	};
+	return h;
+}
 
 describe('exitGuard', () => {
 	it('文案简短且为简体中文', () => {
@@ -67,5 +96,76 @@ describe('exitGuard', () => {
 		s = setExitGuardActive(s, true);
 		expect(s.armedAt).toBe(0);
 		expect(decideExit(s, 2000).decision).toBe('block');
+	});
+});
+
+describe('exitGuard history 垫层', () => {
+	it('build/has/strip 标记', () => {
+		const built = buildExitGuardHistoryState({ theme: 'a' });
+		expect(built[EXIT_GUARD_HISTORY_KEY]).toBe(true);
+		expect(built.theme).toBe('a');
+		expect(hasExitGuardHistory(built)).toBe(true);
+		expect(hasExitGuardHistory(null)).toBe(false);
+		expect(stripExitGuardHistoryState(built)).toEqual({ theme: 'a' });
+	});
+
+	it('ensureExitGuardPush 只垫一次', () => {
+		const h = mockHistory({ keep: 1 });
+		expect(ensureExitGuardPush(h)).toBe(true);
+		expect(h.stack.length).toBe(2);
+		expect(hasExitGuardHistory(h.state)).toBe(true);
+		expect(ensureExitGuardPush(h)).toBe(false);
+		expect(h.stack.length).toBe(2);
+	});
+
+	it('clearExitGuardHistory 用 replace 去掉标记', () => {
+		const h = mockHistory(null);
+		pushExitGuardHistory(h);
+		expect(hasExitGuardHistory(h.state)).toBe(true);
+		clearExitGuardHistory(h);
+		expect(hasExitGuardHistory(h.state)).toBe(false);
+		expect(h.stack.length).toBe(2);
+	});
+
+	it('popstate 第一次 repush，窗口内第二次 continueBack', () => {
+		let s = setExitGuardActive(createExitGuardState(), true);
+		const h = mockHistory(null);
+		ensureExitGuardPush(h);
+		expect(h.stack.length).toBe(2);
+
+		// 模拟第一次侧滑：浏览器先 pop 掉垫层
+		h.back();
+		expect(h.stack.length).toBe(1);
+		const first = handleExitGuardPopstate(s, 1000);
+		expect(first.repush).toBe(true);
+		expect(first.showHint).toBe(true);
+		expect(first.continueBack).toBe(false);
+		s = first.next;
+		if (first.repush) pushExitGuardHistory(h);
+		expect(h.stack.length).toBe(2);
+		expect(hasExitGuardHistory(h.state)).toBe(true);
+
+		// 第二次侧滑
+		h.back();
+		const second = handleExitGuardPopstate(s, 1500);
+		expect(second.repush).toBe(false);
+		expect(second.continueBack).toBe(true);
+		expect(second.next.active).toBe(false);
+		s = second.next;
+		if (second.continueBack) h.back();
+		// 底座条目仍在；真正离站由浏览器继续 pop 更早的条目
+		expect(h.stack.length).toBe(1);
+		expect(second.next.active).toBe(false);
+	});
+
+	it('未激活 popstate 不 re-push', () => {
+		const s = createExitGuardState();
+		const r = handleExitGuardPopstate(s, 1000);
+		expect(r).toEqual({
+			next: s,
+			repush: false,
+			continueBack: false,
+			showHint: false
+		});
 	});
 });

@@ -263,13 +263,16 @@ test.describe('H. 做题防误退出', () => {
 	});
 
 	test('H3 浏览器返回：第一次不离局，第二次离开', async ({ page }) => {
-		// 用站内链接进入，保证走 SvelteKit 客户端路由（整页 goto 的返回拦不住）
+		// 站内进入 + pushState 垫层：模拟手机侧滑/系统返回
 		await page.goto('/');
 		await expect(page.getByTestId('generate')).toBeVisible();
 		await page.getByTestId('nav-practice').click();
 		await expect(page.getByTestId('practice-start')).toBeVisible();
 		await startPractice(page, { alreadyOnPractice: true, mode: 'normal', count: 2, ops: ['加法'] });
 		await expect(page.getByTestId('practice-area')).toBeVisible();
+		await expect
+			.poll(async () => page.evaluate(() => !!(history.state && history.state.__lmExitGuard)))
+			.toBe(true);
 
 		await page.goBack();
 		await expect(page.getByTestId('exit-hint')).toContainText('再按一次');
@@ -297,6 +300,18 @@ test.describe('H. 做题防误退出', () => {
 		await page.getByTestId('nav-home').click();
 		await expect(page.getByTestId('generate')).toBeVisible();
 		await expect(page.getByTestId('exit-hint')).toHaveCount(0);
+	});
+
+	test('H6 直达 /practice 开局后侧滑：第一次垫层拦住', async ({ page }) => {
+		// 无站内上一页时，仍靠 pushState 垫层拦住第一次返回
+		await startPractice(page, { mode: 'normal', count: 2, ops: ['加法'] });
+		await expect
+			.poll(async () => page.evaluate(() => !!(history.state && history.state.__lmExitGuard)))
+			.toBe(true);
+		await page.goBack();
+		await expect(page.getByTestId('exit-hint')).toContainText('再按一次');
+		await expect(page.getByTestId('practice-area')).toBeVisible();
+		await expect(page).toHaveURL(/\/practice/);
 	});
 });
 

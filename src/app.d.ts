@@ -5,7 +5,10 @@ declare global {
 		// interface Error {}
 		// interface Locals {}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			/** 做题对局中 history 垫层标记（防侧滑误退出） */
+			__lmExitGuard?: boolean;
+		}
 		// interface Platform {}
 	}
 }
