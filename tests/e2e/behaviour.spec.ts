@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import path from 'node:path';
-import { SHOTS, openHome, setConfig } from './helpers';
+import { SHOTS, openHome, setConfig, enterPracticeAnswer } from './helpers';
 
 test('改设置后自动刷新预览，打印的是新题', async ({ page }) => {
 	await setConfig(page, { operations: ['mul'], range: { min: 1, max: 100 } });
@@ -102,8 +102,7 @@ test('练习结果页收藏后星标立即点亮；纯除法 4 个数也能开�
 	await page.getByLabel('做几道').fill('1');
 	await page.getByTestId('practice-start').click();
 	await expect(page.getByTestId('practice-progress')).toHaveText('第 1 / 1 题');
-	await page.locator('.answer-input input').fill('99999');
-	await page.locator('.answer-input input').press('Enter');
+	await enterPracticeAnswer(page, '99999');
 	await expect(page.getByTestId('feedback')).toContainText('正确答案');
 	await page.getByRole('button', { name: /看看成绩/ }).click();
 	const star = page.getByTestId('favorite-btn').first();

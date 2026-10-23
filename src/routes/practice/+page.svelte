@@ -12,9 +12,16 @@
 	import ProblemDisplay from '#lib/components/ProblemDisplay.svelte';
 	import PracticeResult from '#lib/components/PracticeResult.svelte';
 	import PracticeConfig from '#lib/components/PracticeConfig.svelte';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { browser } from '$app/env';
+	import {
+		createExitGuardState,
+		decideExit,
+		setExitGuardActive,
+		EXIT_GUARD_HINT,
+		EXIT_GUARD_WINDOW_MS
+	} from '#lib/services/exitGuard.js';
 	import { addWrongRecord, generateWrongReview } from '#lib/services/wrongBook.js';
 	import { generateFavoriteReview } from '#lib/services/favorites.js';
 	import { checkAchievements, type Achievement } from '#lib/services/achievements.js';
@@ -68,6 +75,10 @@
 	let advanceTimer: ReturnType<typeof setTimeout> | undefined;
 	let speakProblemTimer: ReturnType<typeof setTimeout> | undefined;
 	let correctAdvance: CorrectAdvanceHandle | undefined;
+	/** 对局中防误退出（侧滑返回 / 顶栏导航 / 退出按钮） */
+	let exitGuard = $state(createExitGuardState());
+	let exitHint = $state('');
+	let exitHintTimer: ReturnType<typeof setTimeout> | undefined;
 
 	/** 在线练习不分页，校验时忽略「每页题数」 */
 	const practiceIssues = $derived(validateConfig({ ...config, countPerPage: 1 }));
@@ -76,6 +87,40 @@
 		if (!browser) return;
 		speechSupported = isSpeechSupported();
 		voiceOn = isVoiceEnabled();
+	});
+
+	/** 仅对局进行中拦截离开；结果页/配置页不拦 */
+	$effect(() => {
+		const should = phase === 'practice';
+		exitGuard = setExitGuardActive(untrack(() => exitGuard), should);
+		if (!should) {
+			exitHint = '';
+			clearTimeout(exitHintTimer);
+		}
+	});
+
+	function flashExitHint() {
+		exitHint = EXIT_GUARD_HINT;
+		clearTimeout(exitHintTimer);
+		exitHintTimer = setTimeout(() => {
+			exitHint = '';
+		}, EXIT_GUARD_WINDOW_MS);
+	}
+
+	beforeNavigate((nav) => {
+		if (phase !== 'practice') return;
+		// 仍停在 /practice（清 query、浅路由等）放行
+		const staying =
+			nav.type !== 'leave' &&
+			nav.to != null &&
+			nav.to.url.pathname === '/practice';
+		if (staying) return;
+		const r = decideExit(exitGuard);
+		exitGuard = r.next;
+		if (r.decision === 'block') {
+			nav.cancel();
+			if (r.showHint) flashExitHint();
+		}
 	});
 
 	function startWith(list: AnyProblem[]) {
@@ -287,6 +332,17 @@
 		stopSpeaking();
 		goto('/');
 	}
+
+	/** 页内「退出」：与侧滑返回同一套「再按一次」 */
+	function requestLeavePractice() {
+		const r = decideExit(exitGuard);
+		exitGuard = r.next;
+		if (r.decision === 'block') {
+			if (r.showHint) flashExitHint();
+			return;
+		}
+		handleRestart();
+	}
 </script>
 
 <svelte:head>
@@ -339,6 +395,15 @@
 							{/if}
 						{/if}
 						<Timer bind:this={timerRef} running={timerRunning} />
+						<button
+							class="exit-btn ui-btn ui-btn-quiet"
+							onclick={requestLeavePractice}
+							title="退出本局"
+							aria-label="退出本局"
+							data-testid="practice-exit"
+						>
+							退出
+						</button>
 					</div>
 				</div>
 				<ProblemDisplay problem={problems[currentIndex]} />
@@ -379,6 +444,10 @@
 			/>
 		{/if}
 	</main>
+
+	{#if exitHint}
+		<div class="exit-hint" data-testid="exit-hint" role="status" aria-live="polite">{exitHint}</div>
+	{/if}
 
 	<!-- 成就提示 -->
 	{#each unlockedAchievements as achievement (achievement.id)}
@@ -504,6 +573,29 @@
 		text-align: center;
 		font-size: 1.15rem;
 	}
+	.exit-btn {
+		flex: 0 0 auto;
+		min-height: 40px;
+		padding: 0 0.75rem;
+		font-size: 0.95rem;
+	}
+	.exit-hint {
+		position: fixed;
+		left: 50%;
+		bottom: 1.5rem;
+		transform: translateX(-50%);
+		z-index: 40;
+		max-width: min(92vw, 22rem);
+		padding: 0.7rem 1.1rem;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--c-ink) 88%, transparent);
+		color: var(--c-surface);
+		font-size: 1rem;
+		font-weight: 700;
+		text-align: center;
+		box-shadow: 0 8px 24px color-mix(in srgb, var(--c-ink) 25%, transparent);
+		pointer-events: none;
+	}
 
 	@media (max-width: 480px) {
 		.practice-area {
@@ -530,6 +622,10 @@
 		}
 		.fb-title {
 			font-size: 1.5rem;
+		}
+		.exit-hint {
+			bottom: 1.1rem;
+			font-size: 0.95rem;
 		}
 	}
 </style>
