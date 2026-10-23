@@ -102,3 +102,14 @@ export async function waitPreviewSettled(page: Page) {
 	await expect(page.getByTestId('stale-banner')).toHaveCount(0, { timeout: 3000 });
 	await page.waitForTimeout(200);
 }
+
+/** 练习页自绘键盘输入答案并点「好了」（不弹系统键盘） */
+export async function enterPracticeAnswer(page: Page, digits: string) {
+	await expect(page.getByTestId('numeric-keypad')).toBeVisible();
+	for (const ch of digits) {
+		if (ch < '0' || ch > '9') throw new Error(`非数字: ${ch}`);
+		await page.getByTestId(`keypad-digit-${ch}`).click();
+	}
+	await page.getByTestId('keypad-submit').click();
+}
+

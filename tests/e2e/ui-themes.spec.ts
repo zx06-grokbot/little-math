@@ -270,8 +270,11 @@ const LAYOUT_TARGETS: Record<string, string[]> = {
 		'[data-testid=practice-area]',
 		'[data-testid=practice-progress]',
 		'.problem-display',
-		'[data-testid=practice-area] input',
-		'[data-testid=practice-area] button',
+		'[data-testid=answer-display]',
+		'[data-testid=numeric-keypad]',
+		'[data-testid=keypad-digit-1]',
+		'[data-testid=keypad-submit]',
+		'[data-testid=practice-exit]',
 		'[data-testid=app-footer]'
 	]
 };

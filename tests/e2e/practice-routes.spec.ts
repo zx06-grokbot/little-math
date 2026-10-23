@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { enterPracticeAnswer } from './helpers';
 
 async function startPractice(
 	page: import('@playwright/test').Page,
-	opts: { mode?: string; count?: number; ops?: string[] } = {}
+	opts: { mode?: string; count?: number; ops?: string[]; alreadyOnPractice?: boolean } = {}
 ) {
-	await page.goto('/practice');
+	if (!opts.alreadyOnPractice) await page.goto('/practice');
 	if (opts.mode) await page.getByTestId('practice-mode').selectOption(opts.mode);
 	if (opts.count != null) {
 		await page.locator('label', { hasText: '做几道' }).locator('input').fill(String(opts.count));
@@ -33,8 +34,7 @@ test.describe('B. 在线练习', () => {
 
 	test('B2/B4 即时反馈与结果页正确率/用时', async ({ page }) => {
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
-		await page.locator('.answer-input input').fill('99999');
-		await page.locator('.answer-input input').press('Enter');
+		await enterPracticeAnswer(page, '99999');
 		await expect(page.getByTestId('feedback')).toContainText(/正确|错误|答/);
 		await page.getByRole('button', { name: /看看成绩/ }).click();
 		await expect(page.getByTestId('practice-result')).toBeVisible();
@@ -54,8 +54,7 @@ test.describe('B. 在线练习', () => {
 		await page.goto('/practice');
 		await page.evaluate(() => localStorage.removeItem('little-math-wrong-book'));
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
-		await page.locator('.answer-input input').fill('99999');
-		await page.locator('.answer-input input').press('Enter');
+		await enterPracticeAnswer(page, '99999');
 		await expect(page.getByTestId('feedback')).toContainText('正确答案');
 		const wrongBook = await page.evaluate(() => JSON.parse(localStorage.getItem('little-math-wrong-book') || '[]'));
 		expect(wrongBook.length).toBe(1);
@@ -113,8 +112,7 @@ test.describe('C. 错题本', () => {
 		await page.goto('/practice');
 		await page.evaluate(() => localStorage.removeItem('little-math-wrong-book'));
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
-		await page.locator('.answer-input input').fill('99999');
-		await page.locator('.answer-input input').press('Enter');
+		await enterPracticeAnswer(page, '99999');
 		await expect(page.getByTestId('feedback')).toContainText('正确答案');
 		const n = await page.evaluate(() => JSON.parse(localStorage.getItem('little-math-wrong-book') || '[]').length);
 		expect(n).toBe(1);
@@ -138,8 +136,7 @@ test.describe('D. 收藏', () => {
 		await page.goto('/practice');
 		await page.evaluate(() => localStorage.setItem('little-math-favorites', '[]'));
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
-		await page.locator('.answer-input input').fill('99999');
-		await page.locator('.answer-input input').press('Enter');
+		await enterPracticeAnswer(page, '99999');
 		await page.getByRole('button', { name: /看看成绩/ }).click();
 		await page.getByTestId('favorite-btn').first().click();
 		const n = await page.evaluate(() => JSON.parse(localStorage.getItem('little-math-favorites') || '[]').length);
@@ -213,8 +210,7 @@ test.describe('F. 成就', () => {
 			localStorage.setItem('little-math-achievements', '[]');
 		});
 		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
-		await page.locator('.answer-input input').fill('0');
-		await page.locator('.answer-input input').press('Enter');
+		await enterPracticeAnswer(page, '0');
 		await page.waitForTimeout(500);
 		const toast = page.getByTestId('achievement-toast');
 		const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('little-math-achievements') || '[]'));
@@ -236,5 +232,108 @@ test.describe('G. 移动端响应式', () => {
 		await page.goto('/practice');
 		await expect(page.getByTestId('practice-start')).toBeVisible();
 		await expect(page.getByTestId('practice-mode')).toBeVisible();
+	});
+});
+
+test.describe('H. 做题防误退出', () => {
+	test('H1 对局中点退出：第一次提示，第二次回配置', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await startPractice(page, { mode: 'normal', count: 3, ops: ['加法'] });
+		await expect(page.getByTestId('practice-exit')).toBeVisible();
+
+		await page.getByTestId('practice-exit').click();
+		await expect(page.getByTestId('exit-hint')).toContainText('再按一次');
+		await expect(page.getByTestId('practice-area')).toBeVisible();
+
+		await page.getByTestId('practice-exit').click();
+		await expect(page.getByTestId('practice-start')).toBeVisible();
+		await expect(page.getByTestId('practice-area')).toHaveCount(0);
+	});
+
+	test('H2 对局中点顶栏导航：第一次拦住，第二次才离开', async ({ page }) => {
+		await startPractice(page, { mode: 'normal', count: 3, ops: ['加法'] });
+		await page.getByTestId('nav-home').click();
+		await expect(page.getByTestId('exit-hint')).toContainText('再按一次');
+		await expect(page).toHaveURL(/\/practice/);
+		await expect(page.getByTestId('practice-area')).toBeVisible();
+
+		await page.getByTestId('nav-home').click();
+		await expect(page.getByTestId('generate')).toBeVisible();
+		await expect(page.getByTestId('practice-area')).toHaveCount(0);
+	});
+
+	test('H3 浏览器返回：第一次不离局，第二次离开', async ({ page }) => {
+		// 用站内链接进入，保证走 SvelteKit 客户端路由（整页 goto 的返回拦不住）
+		await page.goto('/');
+		await expect(page.getByTestId('generate')).toBeVisible();
+		await page.getByTestId('nav-practice').click();
+		await expect(page.getByTestId('practice-start')).toBeVisible();
+		await startPractice(page, { alreadyOnPractice: true, mode: 'normal', count: 2, ops: ['加法'] });
+		await expect(page.getByTestId('practice-area')).toBeVisible();
+
+		await page.goBack();
+		await expect(page.getByTestId('exit-hint')).toContainText('再按一次');
+		await expect(page.getByTestId('practice-area')).toBeVisible();
+		await expect(page).toHaveURL(/\/practice/);
+
+		await page.goBack();
+		await expect(page.getByTestId('generate')).toBeVisible();
+		await expect(page.getByTestId('practice-area')).toHaveCount(0);
+	});
+
+	test('H4 结果页回首页不拦', async ({ page }) => {
+		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
+		await enterPracticeAnswer(page, '99999');
+		await page.getByRole('button', { name: /看看成绩/ }).click();
+		await expect(page.getByTestId('practice-result')).toBeVisible();
+		await page.getByRole('button', { name: /回首页/ }).click();
+		await expect(page.getByTestId('generate')).toBeVisible();
+		await expect(page.getByTestId('exit-hint')).toHaveCount(0);
+	});
+
+	test('H5 配置页不拦导航', async ({ page }) => {
+		await page.goto('/practice');
+		await expect(page.getByTestId('practice-start')).toBeVisible();
+		await page.getByTestId('nav-home').click();
+		await expect(page.getByTestId('generate')).toBeVisible();
+		await expect(page.getByTestId('exit-hint')).toHaveCount(0);
+	});
+});
+
+test.describe('I. 自绘数字键盘', () => {
+	test('I1 窄屏对局用自绘键、无系统 number input', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await startPractice(page, { mode: 'normal', count: 1, ops: ['加法'] });
+		await expect(page.getByTestId('numeric-keypad')).toBeVisible();
+		await expect(page.getByTestId('answer-display')).toBeVisible();
+		await expect(page.locator('.answer-input input[type=number]')).toHaveCount(0);
+		await expect(page.locator('input[inputmode=numeric]')).toHaveCount(0);
+		await enterPracticeAnswer(page, '1');
+		await expect(page.getByTestId('feedback')).toBeVisible();
+	});
+
+	test('I2 比较模式大按钮可点', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await startPractice(page, { mode: 'compare', count: 1 });
+		await expect(page.getByTestId('compare-input')).toBeVisible();
+		await page.getByTestId('compare-eq').click();
+		await expect(page.getByTestId('feedback')).toBeVisible();
+	});
+
+	test('I3 余数模式自绘键可提交', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await startPractice(page, { mode: 'remainder', count: 1 });
+		await expect(page.getByTestId('remainder-input')).toBeVisible();
+		await expect(page.getByTestId('numeric-keypad')).toBeVisible();
+		// 乱填也能出反馈
+		for (const d of '9') await page.getByTestId(`keypad-digit-${d}`).click();
+		// both 可能要填两项；若只有商，好了可点；若 both 则再点余数框
+		const remField = page.getByTestId('remainder-field-remainder');
+		if (await remField.count()) {
+			await remField.click();
+			await page.getByTestId('keypad-digit-1').click();
+		}
+		await page.getByTestId('keypad-submit').click();
+		await expect(page.getByTestId('feedback')).toBeVisible();
 	});
 });
